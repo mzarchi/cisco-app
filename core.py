@@ -1,9 +1,11 @@
+from concurrent.futures import ThreadPoolExecutor
+from config import Config as cf
+
 import re
+import getpass
 import sqlite3
 import platform
 import subprocess
-from config import Config as cf
-from concurrent.futures import ThreadPoolExecutor
 
 
 class Core:
@@ -91,6 +93,20 @@ class Core:
         elif result >= 10 and result < 100:
             result = f"0{result}"
         return result
+    
+    def get_current_text(self, prompt):
+        while True:
+            value = input(prompt).strip()
+            if value:
+                return value
+            print("Insert a character!")
+            
+    def get_current_pass(self, prompt):
+        while True:
+            value = getpass.getpass(prompt).strip()
+            if value:
+                return value
+            print("Insert a character!")
 
 
 class App_DB:
