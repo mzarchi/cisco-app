@@ -3,6 +3,8 @@ from config import Config as cf
 from encrypt import Encryption
 
 import re
+import sys
+import time
 import getpass
 import sqlite3
 import platform
@@ -105,6 +107,27 @@ class Core:
             if value:
                 return value
             print("Insert a character!")
+
+    def show_banner(self):
+        print("""
+   █████████   ███                                 █████████                      
+  ███░░░░░███ ░░░                                 ███░░░░░███                     
+ ███     ░░░  ████   █████   ██████   ██████     ░███    ░███  ████████  ████████ 
+░███         ░░███  ███░░   ███░░███ ███░░███    ░███████████ ░░███░░███░░███░░███
+░███          ░███ ░░█████ ░███ ░░░ ░███ ░███    ░███░░░░░███  ░███ ░███ ░███ ░███
+░░███     ███ ░███  ░░░░███░███  ███░███ ░███    ░███    ░███  ░███ ░███ ░███ ░███
+ ░░█████████  █████ ██████ ░░██████ ░░██████     █████   █████ ░███████  ░███████ 
+  ░░░░░░░░░  ░░░░░ ░░░░░░   ░░░░░░   ░░░░░░     ░░░░░   ░░░░░  ░███░░░   ░███░░░  
+                                                               ░███      ░███     
+                                                               █████     █████    
+                                                              ░░░░░     ░░░░░     """)
+        message = "Developer: github/mzarchi, version: 0.1 (202808)\n"
+        message += "Repository: https://github.com/mzarchi/cisco-app\n"
+        message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
+        message += "I always live in the depths of the Internet ❤️"
+        for c in message:
+            print(c, end='', flush=True)
+            time.sleep(0.1)
 
 
 class App_DB:
