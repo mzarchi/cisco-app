@@ -40,11 +40,13 @@ class Core:
 
     def switch_data(self, switch: list):
         result = {}
-
-        # IPv4 Value
-        # ipv4_pattern = r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b"
-        # ipv4_find = re.findall(ipv4_pattern, switch)
-        # result.update({"sw_ip" : ipv4_find[0]})
+        
+        """
+        IPv4 Value
+        ipv4_pattern = r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b"
+        ipv4_find = re.findall(ipv4_pattern, switch)
+        result.update({"sw_ip" : ipv4_find[0]})
+        """
 
         # Switch Name
         deviveID_pattern = r".*Device ID:.*"
@@ -104,3 +106,16 @@ class SQLite_Database:
     def commit(self):
         self.conn.commit()
         self.conn.close()
+
+    def create_tables(self):
+        self.cursor.execute("""
+                            CREATE TABLE IF NOT EXISTS admin_data (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                username TEXT NOT NULL,
+                                password TEXT NOT NULL,
+                                secret TEXT,
+                                domain TEXT,
+                                ip_range TEXT,
+                                subnet TEXT,
+                                csv_name TEXT)
+                            """)
