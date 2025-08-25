@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 from config import Config as cf
+from encrypt import Encryption
 
 import re
 import getpass
@@ -94,7 +95,7 @@ class Core:
             result = f"0{result}"
         return result
 
-    def get_current_text(self, prompt, text):
+    def get_current_text(self, prompt, text=True):
         while True:
             if text:
                 value = input(prompt).strip()
@@ -111,15 +112,18 @@ class App_DB:
     cursor = None
 
     def __init__(self):
-        self.conn = sqlite3.connect("app_data.db")
-        self.cursor = self.conn.cursor()
         self.create_tables()
 
-    def commit(self):
+    def __open(self):
+        self.conn = sqlite3.connect("app_data.db")
+        self.cursor = self.conn.cursor()
+
+    def __close(self):
         self.conn.commit()
         self.conn.close()
 
     def create_tables(self):
+        self.__open()
         self.cursor.execute("""
                             CREATE TABLE IF NOT EXISTS admin_data (
                                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -127,18 +131,42 @@ class App_DB:
                                 password TEXT NOT NULL,
                                 secret TEXT,
                                 domain TEXT,
-                                ip_range TEXT,
+                                sw_core TEXT,
                                 subnet TEXT,
                                 csv_name TEXT)
                             """)
-
-    def __query_execute(self, query):
-        self.cursor.execute(query)
+        self.__close()
 
     def count_user(self):
-        result = self.__query_execute("SELECT * FROM admin_data")
+        self.__open()
+        result = self.cursor.execute("SELECT * FROM admin_data")
         result = self.cursor.fetchall()
-        if len(result) == 0:
+        self.__close()
+
+        if len(result) <= 0:
             return False
         else:
             return True
+
+    def insert_user_data(self, data):
+        en = Encryption()
+        self.__open()
+        self.cursor.execute(
+            """INSERT INTO admin_data (
+                    username,
+                    password,
+                    secret,
+                    domain,
+                    sw_core,
+                    subnet,
+                    csv_name
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)""", (
+                en.encode(data['username']),
+                en.encode(data['password']),
+                en.encode(data['secret']),
+                en.encode(data['domain']),
+                en.encode(data['sw_core']),
+                en.encode(data['subnet']),
+                en.encode(data['csv_name'])
+            ))
+        self.__close()
