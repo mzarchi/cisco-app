@@ -1,0 +1,26 @@
+import sys
+
+class Config:
+    hostname = None
+    counter = 0
+    all_switches = []
+    root_dir = sys.argv[0].replace("main.py","")
+    domain = ""
+    ssh_switch_range = "" # 192.168.100.x/24
+    auth_dict ={
+        0: {
+            "type": "Default",
+            "username": "",
+            "password": "",
+            "secret": ""
+            },
+        1: {
+            "type": "Radius",
+            "username": "zarchi",
+            "password": "ZZZzzz.122333",
+            "secret": "ZZZzzz.122333"
+            }
+        }
+    
+    def __init__(self):
+        pass
