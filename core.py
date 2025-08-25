@@ -43,10 +43,10 @@ class Core:
     def switch_data(self, switch: list):
         result = {}
 
-        #IPv4 Value
-        #ipv4_pattern = r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b"
-        #ipv4_find = re.findall(ipv4_pattern, switch)
-        #result.update({"sw_ip" : ipv4_find[0]})
+        # IPv4 Value
+        # ipv4_pattern = r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b"
+        # ipv4_find = re.findall(ipv4_pattern, switch)
+        # result.update({"sw_ip" : ipv4_find[0]})
 
         # Switch Name
         deviveID_pattern = r".*Device ID:.*"
@@ -93,17 +93,14 @@ class Core:
         elif result >= 10 and result < 100:
             result = f"0{result}"
         return result
-    
-    def get_current_text(self, prompt):
+
+    def get_current_text(self, prompt, text):
         while True:
-            value = input(prompt).strip()
-            if value:
-                return value
-            print("Insert a character!")
-            
-    def get_current_pass(self, prompt):
-        while True:
-            value = getpass.getpass(prompt).strip()
+            if text:
+                value = input(prompt).strip()
+            else:
+                value = getpass.getpass(prompt).strip()
+
             if value:
                 return value
             print("Insert a character!")
