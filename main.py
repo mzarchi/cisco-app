@@ -1,43 +1,26 @@
-from config import Config as cf
-from core import Core
+from config import Config
+from core import Core, App_DB
 from netmiko import ConnectHandler
 
+
+ad = App_DB()
 cr = Core()
-cr.scan_network()
 
-switches = cf.all_switches
-for i, ip in enumerate(switches):
-    connect = None
-    auth_index = 0
-    while True:
-        try:
-            cisco_switch = {
-                'device_type': 'cisco_ios',
-                'host': ip,
-                'username': cf.auth_dict[auth_index]['username'],
-                'password': cf.auth_dict[auth_index]['password'],
-                'secret': cf.auth_dict[auth_index]['secret'],
-            }
+if not ad.count_user():
+    user_data = {}
+    username = cr.get_current_text("Please inser your username: ")
+    user_data.update({'username': username})
+    password = cr.get_current_text("Please inser your password: ", False)
+    user_data.update({'password': password})
+    secret = cr.get_current_text("Please inser your secret: ", False)
+    user_data.update({'secret': password if secret == '' else secret})
+    domain = cr.get_current_text("Please inser your domain: ")
+    user_data.update({'domain': domain})
+    sw_core = cr.get_current_text("Please inser your SW-Core IP: ")
+    user_data.update({'sw_core': sw_core})
+    subnet = cr.get_current_text("Please inser your IP subnet: ")
+    user_data.update({'subnet': subnet})
+    csv_name = cr.get_current_text("Please inser your CSV name: ")
+    user_data.update({'csv_name': csv_name})
 
-            connect = ConnectHandler(**cisco_switch)
-            connect.enable()
-            break
-
-        except Exception as e:
-            if auth_index < len(cf.auth_dict):
-                auth_index += 1
-                continue
-            else:
-                break
-
-    if connect != None:
-        try:
-            version_data = connect.send_command("show version")
-            cr.find_hostname(version_data)
-            content = connect.send_command("show cdp neighbors detail")
-            # content = cr.read_file(cf.root_dir, "sample.txt")
-            sw_text = cr.manage_content(content)
-            cr.write_result(sw_text)
-        except Exception as e:
-            print(f"- Error in {ip}: {e}")
-            continue
+    ad.insert_user_data(user_data)
