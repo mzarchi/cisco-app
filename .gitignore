@@ -1,2 +1,5 @@
 config.py
-hash.py
+encrypt.py
+__*
+*.db
+*test*
