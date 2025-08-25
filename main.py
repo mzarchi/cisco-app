@@ -2,6 +2,8 @@ from config import Config
 from core import Core, App_DB
 from netmiko import ConnectHandler
 
+import os
+import time
 
 ad = App_DB()
 cr = Core()
@@ -24,3 +26,25 @@ if not ad.count_user():
     user_data.update({'csv_name': csv_name})
 
     ad.insert_user_data(user_data)
+    os.system('cls')
+
+cr.show_banner()
+time.sleep(2)
+switch = 0
+while True:
+    os.system('cls')
+    switch = input("Exit: 0")
+    
+    if switch == "0":
+        os.system('cls')
+        break
+    else:
+        match switch:
+            case "1":
+                os.system('cls')
+                continue
+    
+
+
+print("Good bye ツ")
+time.sleep(2)
