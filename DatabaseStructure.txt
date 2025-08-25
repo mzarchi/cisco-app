@@ -1,0 +1,11 @@
+Database Structure
+------------------
+
+admin-data: 04:52 PM 2025-08-25
+	- username
+	- password
+	- secret
+	- domain
+	- ip_range
+	- subnet
+	- csv_name
