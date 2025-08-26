@@ -33,7 +33,7 @@ time.sleep(2)
 switch = 0
 while True:
     os.system('cls')
-    switch = input("Exit: 0")
+    switch = input(cr.show_menu())
     
     if switch == "0":
         os.system('cls')

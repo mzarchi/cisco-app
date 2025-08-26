@@ -109,18 +109,7 @@ class Core:
             print("Insert a character!")
 
     def show_banner(self):
-        print("""
-   █████████   ███                                 █████████                      
-  ███░░░░░███ ░░░                                 ███░░░░░███                     
- ███     ░░░  ████   █████   ██████   ██████     ░███    ░███  ████████  ████████ 
-░███         ░░███  ███░░   ███░░███ ███░░███    ░███████████ ░░███░░███░░███░░███
-░███          ░███ ░░█████ ░███ ░░░ ░███ ░███    ░███░░░░░███  ░███ ░███ ░███ ░███
-░░███     ███ ░███  ░░░░███░███  ███░███ ░███    ░███    ░███  ░███ ░███ ░███ ░███
- ░░█████████  █████ ██████ ░░██████ ░░██████     █████   █████ ░███████  ░███████ 
-  ░░░░░░░░░  ░░░░░ ░░░░░░   ░░░░░░   ░░░░░░     ░░░░░   ░░░░░  ░███░░░   ░███░░░  
-                                                               ░███      ░███     
-                                                               █████     █████    
-                                                              ░░░░░     ░░░░░     """)
+        print(cf.banner)
         message = "Developer: github/mzarchi, version: 0.1 (202808)\n"
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
@@ -128,6 +117,13 @@ class Core:
         for c in message:
             print(c, end='', flush=True)
             time.sleep(0.1)
+
+    def show_menu(self):
+        message = "Please select one of the options below:\n"
+        message += "\t1- Switch Scan (Get list of your switches)\n"
+        message += "\t2- IP Scan (Get list of your IP Address in your switch)\n"
+        message += "\t0- Exit\nPlease insert option number: "
+        return message
 
 
 class App_DB:
