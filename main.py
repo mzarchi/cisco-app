@@ -1,10 +1,10 @@
 from config import Config
 from core import Core, App_DB
-from netmiko import ConnectHandler
 
 import os
 import time
 
+cf = Config()
 ad = App_DB()
 cr = Core()
 
@@ -28,13 +28,13 @@ if not ad.count_user():
     ad.insert_user_data(user_data)
     os.system('cls')
 
-cr.show_banner()
-time.sleep(2)
+#cr.show_banner()
+#time.sleep(2)
 switch = 0
 while True:
     os.system('cls')
     switch = input(cr.show_menu())
-    
+
     if switch == "0":
         os.system('cls')
         break
@@ -43,8 +43,13 @@ while True:
             case "1":
                 os.system('cls')
                 continue
-    
 
+            case "2":
+                cr.case2_handler()
+
+            case "3":
+                os.system('cls')
+                continue
 
 print("Good bye ツ")
 time.sleep(2)
