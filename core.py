@@ -183,13 +183,13 @@ class Core:
                 except Exception as e:
                     print(f"- Error in {ip}: {e}")
                     continue
-        
+
         dt = self.get_datetime()
         with open(f"{cf.data_dir}Switch-Links_{dt['date']}-{dt['time']}.txt", "a") as file:
             file.write(result)
 
         input("Task finished! press Enter to continue ..")
-        
+
     def get_datetime(self):
         result = {}
         now = datetime.now()
@@ -239,6 +239,15 @@ class App_DB:
                                 subnet TEXT,
                                 csv_name TEXT)
                             """)
+
+        self.cursor.execute("""
+                            CREATE TABLE IF NOT EXISTS switch_links (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                link TEXT NOT NULL,
+                                insert_date TEXT NOT NULL,
+                                update_date TEXT NOT NULL)
+                            """)
+
         self.__close()
 
     def count_user(self):
