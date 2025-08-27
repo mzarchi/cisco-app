@@ -45,6 +45,7 @@ while True:
                 continue
 
             case "2":
+                cf.counter = 0
                 cr.case2_handler()
 
             case "3":
