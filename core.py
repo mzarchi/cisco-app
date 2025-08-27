@@ -1,6 +1,8 @@
-from concurrent.futures import ThreadPoolExecutor
 from config import Config
+from datetime import datetime
 from encrypt import Encryption
+from netmiko import ConnectHandler
+from concurrent.futures import ThreadPoolExecutor
 
 import re
 import sys
@@ -85,11 +87,14 @@ class Core:
         return result
 
     def write_result(self, sw_text: list):
+        result = ""
         for i in range(0, len(sw_text)):
             sw_data = self.switch_data(sw_text[i])
-            part_one = f"{self.__set_number()} - {Config.hostname}: {sw_data["ports"][0]}"
-            print(
-                f"{part_one:<70} ----> {sw_data["device"]}: {sw_data["ports"][1]}")
+            part_one = f"{self.__set_number()} - {Config.hostname+":":<30} {sw_data["ports"][0]:<25}"
+            part_two = f"{sw_data["device"]+":":<30} {sw_data["ports"][1]:<25}"
+            print(f"{part_one} ----> {part_two}")
+            result += f"{part_one} ----> {part_two}\n"
+        return result
 
     def find_hostname(self, text):
         host_line = None
@@ -138,6 +143,60 @@ class Core:
         message += "\t0- Exit\nPlease insert option number: "
         return message
 
+    def case2_handler(self):
+        cf = Config()
+        self.scan_network()
+        result = ""
+        switches = cf.all_switches
+        for i, ip in enumerate(switches):
+            connect = None
+            auth_index = 0
+            while True:
+                try:
+                    cisco_switch = {
+                        'device_type': 'cisco_ios',
+                        'host': ip,
+                        'username': cf.auth_dict[auth_index]['username'],
+                        'password': cf.auth_dict[auth_index]['password'],
+                        'secret': cf.auth_dict[auth_index]['secret'],
+                    }
+
+                    connect = ConnectHandler(**cisco_switch)
+                    connect.enable()
+                    break
+
+                except Exception as e:
+                    if auth_index < len(cf.auth_dict):
+                        auth_index += 1
+                        continue
+                    else:
+                        break
+
+            if connect != None:
+                try:
+                    version_data = connect.send_command("show version")
+                    self.find_hostname(version_data)
+                    content = connect.send_command("show cdp neighbors detail")
+                    sw_text = self.manage_content(content)
+                    rd = self.write_result(sw_text)
+                    result += rd
+                except Exception as e:
+                    print(f"- Error in {ip}: {e}")
+                    continue
+        
+        dt = self.get_datetime()
+        with open(f"{cf.data_dir}Switch-Links_{dt['date']}-{dt['time']}.txt", "a") as file:
+            file.write(result)
+
+        input("Task finished! press Enter to continue ..")
+        
+    def get_datetime(self):
+        result = {}
+        now = datetime.now()
+        result.update({"date": now.strftime("%Y%m%d")})
+        result.update({"time": now.strftime("%H%M%S")})
+        return result
+
 
 """
  ██████████              █████              █████                               
@@ -148,7 +207,6 @@ class Core:
  ░███    ███  ███░░███   ░███ ███ ███░░███  ░███ ░███ ███░░███  ░░░░███░███░░░  
  ██████████  ░░████████  ░░█████ ░░████████ ████████ ░░████████ ██████ ░░██████ 
 ░░░░░░░░░░    ░░░░░░░░    ░░░░░   ░░░░░░░░ ░░░░░░░░   ░░░░░░░░ ░░░░░░   ░░░░░░  
-                                                                                
 """
 
 
