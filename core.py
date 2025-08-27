@@ -88,13 +88,16 @@ class Core:
 
     def write_result(self, sw_text: list):
         result = ""
+        db_link = []
         for i in range(0, len(sw_text)):
             sw_data = self.switch_data(sw_text[i])
             part_one = f"{self.__set_number()} - {Config.hostname+":":<30} {sw_data["ports"][0]:<25}"
             part_two = f"{sw_data["device"]+":":<30} {sw_data["ports"][1]:<25}"
             print(f"{part_one} ----> {part_two}")
             result += f"{part_one} ----> {part_two}\n"
-        return result
+            db_link.append(
+                f"{Config.hostname}-{sw_data["ports"][0]}|{sw_data["device"]}-{sw_data["ports"][1]}")
+        return result, db_link
 
     def find_hostname(self, text):
         host_line = None
@@ -145,9 +148,14 @@ class Core:
 
     def case2_handler(self):
         cf = Config()
+        db = App_DB()
         self.scan_network()
         result = ""
         switches = cf.all_switches
+
+        # Put there for use two lines
+        dt = self.get_datetime()
+
         for i, ip in enumerate(switches):
             connect = None
             auth_index = 0
@@ -178,13 +186,17 @@ class Core:
                     self.find_hostname(version_data)
                     content = connect.send_command("show cdp neighbors detail")
                     sw_text = self.manage_content(content)
-                    rd = self.write_result(sw_text)
+                    rd, db_link = self.write_result(sw_text)
                     result += rd
+
+                    # For save all switch link
+                    for i in db_link:
+                        db.insert_switch_link(i, dt['date'], dt['time'])
+
                 except Exception as e:
                     print(f"- Error in {ip}: {e}")
                     continue
 
-        dt = self.get_datetime()
         with open(f"{cf.data_dir}Switch-Links_{dt['date']}-{dt['time']}.txt", "a") as file:
             file.write(result)
 
@@ -283,3 +295,17 @@ class App_DB:
                 en.encode(data['csv_name'])
             ))
         self.__close()
+
+    def insert_switch_link(self, link, date, time):
+        dt = f"{date}-{time}"
+        self.__open()
+        self.cursor.execute(
+            """INSERT INTO switch_links (
+                    link,
+                    insert_date,
+                    update_date
+                ) VALUES (?, ?, ?)""", (link, dt, dt))
+        self.__close()
+
+        def manage_switch_link(self, data):
+            pass
