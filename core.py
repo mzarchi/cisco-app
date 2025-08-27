@@ -139,7 +139,6 @@ class Core:
         return message
 
     def case2_handler(self):
-        counter = 0
         cf = Config()
         db = App_DB()
         self.scan_network()
@@ -206,6 +205,7 @@ class Core:
         with open(f"{cf.data_dir}Switch-Links_{dt['date']}-{dt['time']}.txt", "a") as file:
             file.write(result)
 
+        Config.counter = 0
         input("Task finished! press Enter to continue ..")
 
     def get_datetime(self):
