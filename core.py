@@ -14,14 +14,19 @@ import subprocess
 
 
 """
- ██████   ██████           █████    █████                   █████        
-░░██████ ██████           ░░███    ░░███                   ░░███         
- ░███░█████░███   ██████  ███████   ░███████    ██████   ███████   █████ 
- ░███░░███ ░███  ███░░███░░░███░    ░███░░███  ███░░███ ███░░███  ███░░  
- ░███ ░░░  ░███ ░███████   ░███     ░███ ░███ ░███ ░███░███ ░███ ░░█████ 
- ░███      ░███ ░███░░░    ░███ ███ ░███ ░███ ░███ ░███░███ ░███  ░░░░███
- █████     █████░░██████   ░░█████  ████ █████░░██████ ░░████████ ██████ 
-░░░░░     ░░░░░  ░░░░░░     ░░░░░  ░░░░ ░░░░░  ░░░░░░   ░░░░░░░░ ░░░░░░  
++-----------------------------------------------------------------------------------+
+|                                                                                   |
+|  ██████   ██████           █████    █████                   █████                 |
+| ░░██████ ██████           ░░███    ░░███                   ░░███                  |
+|  ░███░█████░███   ██████  ███████   ░███████    ██████   ███████   █████          | 
+|  ░███░░███ ░███  ███░░███░░░███░    ░███░░███  ███░░███ ███░░███  ███░░           | 
+|  ░███ ░░░  ░███ ░███████   ░███     ░███ ░███ ░███ ░███░███ ░███ ░░█████          | 
+|  ░███      ░███ ░███░░░    ░███ ███ ░███ ░███ ░███ ░███░███ ░███  ░░░░███         |
+|  █████     █████░░██████   ░░█████  ████ █████░░██████ ░░████████ ██████          |
+| ░░░░░     ░░░░░  ░░░░░░     ░░░░░  ░░░░ ░░░░░  ░░░░░░   ░░░░░░░░ ░░░░░░           |
+|                                                                                   |
++-----------------------------------------------------------------------------------+
+
 """
 
 
@@ -86,19 +91,6 @@ class Core:
 
         return result
 
-    def write_result(self, sw_text: list):
-        result = ""
-        db_link = []
-        for i in range(0, len(sw_text)):
-            sw_data = self.switch_data(sw_text[i])
-            part_one = f"{self.__set_number()} - {Config.hostname+":":<30} {sw_data["ports"][0]:<25}"
-            part_two = f"{sw_data["device"]+":":<30} {sw_data["ports"][1]:<25}"
-            print(f"{part_one} ----> {part_two}")
-            result += f"{part_one} ----> {part_two}\n"
-            db_link.append(
-                f"{Config.hostname}-{sw_data["ports"][0]}|{sw_data["device"]}-{sw_data["ports"][1]}")
-        return result, db_link
-
     def find_hostname(self, text):
         host_line = None
         for line in text.splitlines():
@@ -147,6 +139,7 @@ class Core:
         return message
 
     def case2_handler(self):
+        counter = 0
         cf = Config()
         db = App_DB()
         self.scan_network()
@@ -186,12 +179,25 @@ class Core:
                     self.find_hostname(version_data)
                     content = connect.send_command("show cdp neighbors detail")
                     sw_text = self.manage_content(content)
-                    rd, db_link = self.write_result(sw_text)
-                    result += rd
 
-                    # For save all switch link
-                    for i in db_link:
-                        db.insert_switch_link(i, dt['date'], dt['time'])
+                    # def write_result
+                    wr_result = ""
+                    for i in range(0, len(sw_text)):
+                        sw_data = self.switch_data(sw_text[i])
+                        part_one = f"{self.__set_number()} - {Config.hostname+":":<30} {sw_data["ports"][0]:<25}"
+                        part_two = f"{sw_data["device"]+":":<30} {sw_data["ports"][1]:<25}"
+                        link = f"{Config.hostname}-{sw_data["ports"][0]}|{sw_data["device"]}-{sw_data["ports"][1]}"
+                        msl_dt = f"{dt['date']}-{dt['time']}"
+                        update = db.manage_switch_link(link, msl_dt)
+
+                        part_three = "Insert (New!)"
+                        if update:
+                            part_three = "Update"
+
+                        print(f"{part_one} ----> {part_two} {part_three}")
+                        wr_result += f"{part_one} ----> {part_two} {part_three}\n"
+
+                    result += wr_result
 
                 except Exception as e:
                     print(f"- Error in {ip}: {e}")
@@ -211,14 +217,18 @@ class Core:
 
 
 """
- ██████████              █████              █████                               
-░░███░░░░███            ░░███              ░░███                                
- ░███   ░░███  ██████   ███████    ██████   ░███████   ██████    █████   ██████ 
- ░███    ░███ ░░░░░███ ░░░███░    ░░░░░███  ░███░░███ ░░░░░███  ███░░   ███░░███
- ░███    ░███  ███████   ░███      ███████  ░███ ░███  ███████ ░░█████ ░███████ 
- ░███    ███  ███░░███   ░███ ███ ███░░███  ░███ ░███ ███░░███  ░░░░███░███░░░  
- ██████████  ░░████████  ░░█████ ░░████████ ████████ ░░████████ ██████ ░░██████ 
-░░░░░░░░░░    ░░░░░░░░    ░░░░░   ░░░░░░░░ ░░░░░░░░   ░░░░░░░░ ░░░░░░   ░░░░░░  
++-----------------------------------------------------------------------------------+
+|                                                                                   |
+|  ██████████              █████              █████                                 |
+| ░░███░░░░███            ░░███              ░░███                                  |
+|  ░███   ░░███  ██████   ███████    ██████   ░███████   ██████    █████   ██████   |
+|  ░███    ░███ ░░░░░███ ░░░███░    ░░░░░███  ░███░░███ ░░░░░███  ███░░   ███░░███  |
+|  ░███    ░███  ███████   ░███      ███████  ░███ ░███  ███████ ░░█████ ░███████   |
+|  ░███    ███  ███░░███   ░███ ███ ███░░███  ░███ ░███ ███░░███  ░░░░███░███░░░    |
+|  ██████████  ░░████████  ░░█████ ░░████████ ████████ ░░████████ ██████ ░░██████   |
+| ░░░░░░░░░░    ░░░░░░░░    ░░░░░   ░░░░░░░░ ░░░░░░░░   ░░░░░░░░ ░░░░░░   ░░░░░░    |
+|                                                                                   |
++-----------------------------------------------------------------------------------+
 """
 
 
@@ -227,46 +237,66 @@ class App_DB:
     cursor = None
 
     def __init__(self):
-        self.create_tables()
+        try:
+            self.create_tables()
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-__init__: {e}")
+            sys.exit(1)
 
     def __open(self):
-        cd = Config()
-        self.conn = sqlite3.connect(cd.db_dir)
-        self.cursor = self.conn.cursor()
+        try:
+            cd = Config()
+            self.conn = sqlite3.connect(cd.db_dir)
+            self.cursor = self.conn.cursor()
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-__open: {e}")
+            sys.exit(1)
 
     def __close(self):
-        self.conn.commit()
-        self.conn.close()
+        try:
+            self.conn.commit()
+            self.conn.close()
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-__close: {e}")
+            sys.exit(1)
 
     def create_tables(self):
-        self.__open()
-        self.cursor.execute("""
-                            CREATE TABLE IF NOT EXISTS admin_data (
-                                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                username TEXT NOT NULL,
-                                password TEXT NOT NULL,
-                                secret TEXT,
-                                domain TEXT,
-                                sw_core TEXT,
-                                subnet TEXT,
-                                csv_name TEXT)
-                            """)
+        try:
+            self.__open()
+            self.cursor.execute("""
+                                CREATE TABLE IF NOT EXISTS admin_data (
+                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    username TEXT NOT NULL,
+                                    password TEXT NOT NULL,
+                                    secret TEXT,
+                                    domain TEXT,
+                                    sw_core TEXT,
+                                    subnet TEXT,
+                                    csv_name TEXT)
+                                """)
 
-        self.cursor.execute("""
-                            CREATE TABLE IF NOT EXISTS switch_links (
-                                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                link TEXT NOT NULL,
-                                insert_date TEXT NOT NULL,
-                                update_date TEXT NOT NULL)
-                            """)
+            self.cursor.execute("""
+                                CREATE TABLE IF NOT EXISTS switch_links (
+                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    link TEXT NOT NULL,
+                                    insert_date TEXT NOT NULL,
+                                    update_date TEXT NOT NULL)
+                                """)
 
-        self.__close()
+            self.__close()
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-create_tables: {e}")
+            sys.exit(1)
 
     def count_user(self):
-        self.__open()
-        result = self.cursor.execute("SELECT * FROM admin_data")
-        result = self.cursor.fetchall()
-        self.__close()
+        try:
+            self.__open()
+            result = self.cursor.execute("SELECT * FROM admin_data")
+            result = self.cursor.fetchall()
+            self.__close()
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-count_user: {e}")
+            sys.exit(1)
 
         if len(result) <= 0:
             return False
@@ -274,38 +304,58 @@ class App_DB:
             return True
 
     def insert_user_data(self, data):
-        en = Encryption()
-        self.__open()
-        self.cursor.execute(
-            """INSERT INTO admin_data (
-                    username,
-                    password,
-                    secret,
-                    domain,
-                    sw_core,
-                    subnet,
-                    csv_name
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)""", (
-                en.encode(data['username']),
-                en.encode(data['password']),
-                en.encode(data['secret']),
-                en.encode(data['domain']),
-                en.encode(data['sw_core']),
-                en.encode(data['subnet']),
-                en.encode(data['csv_name'])
-            ))
-        self.__close()
+        try:
+            en = Encryption()
+            self.__open()
+            self.cursor.execute(
+                """INSERT INTO admin_data (
+                        username,
+                        password,
+                        secret,
+                        domain,
+                        sw_core,
+                        subnet,
+                        csv_name
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)""", (
+                    en.encode(data['username']),
+                    en.encode(data['password']),
+                    en.encode(data['secret']),
+                    en.encode(data['domain']),
+                    en.encode(data['sw_core']),
+                    en.encode(data['subnet']),
+                    en.encode(data['csv_name'],)
+                ))
+            self.__close()
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-insert_user_data: {e}")
+            sys.exit(1)
 
-    def insert_switch_link(self, link, date, time):
-        dt = f"{date}-{time}"
-        self.__open()
-        self.cursor.execute(
-            """INSERT INTO switch_links (
-                    link,
-                    insert_date,
-                    update_date
-                ) VALUES (?, ?, ?)""", (link, dt, dt))
-        self.__close()
+    def insert_switch_link(self, link, datetime):
+        try:
+            self.cursor.execute(
+                "INSERT INTO switch_links (link, insert_date, update_date) VALUES (?, ?, ?)", (link, datetime, datetime))
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-insert_switch_link: {e}")
+            sys.exit(1)
 
-        def manage_switch_link(self, data):
-            pass
+    def manage_switch_link(self, link, datetime):
+        update = False
+        try:
+            self.__open()
+            self.cursor.execute(
+                "SELECT * FROM switch_links WHERE link = ?", (link,))
+
+            row = self.cursor.fetchone()
+            if row:
+                self.cursor.execute(
+                    "UPDATE switch_links SET update_date = ? WHERE link = ?", (datetime, link))
+                update = True
+            else:
+                self.insert_switch_link(link, datetime)
+
+            self.__close()
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-manage_switch_link: {e}")
+            sys.exit(1)
+
+        return update
