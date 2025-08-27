@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-from config import Config as cf
+from config import Config
 from encrypt import Encryption
 
 import re
@@ -18,7 +18,7 @@ class Core:
     def scan_network(self):
         with ThreadPoolExecutor(max_workers=50) as executor:
             for i in range(1, 255):
-                ip = f"{cf.ssh_switch_range}.{i}"
+                ip = f"{Config.ssh_switch_range}.{i}"
                 executor.submit(self.ping_ip, ip)
 
     def ping_ip(self, ip):
@@ -27,7 +27,7 @@ class Core:
         try:
             subprocess.run(command, stdout=subprocess.DEVNULL,
                            stderr=subprocess.DEVNULL, timeout=1)
-            cf.all_switches.append(ip)
+            Config.all_switches.append(ip)
         except subprocess.TimeoutExpired:
             pass
 
@@ -54,7 +54,7 @@ class Core:
         # Switch Name
         deviveID_pattern = r".*Device ID:.*"
         deviveID_find = re.findall(deviveID_pattern, switch)[0]
-        replacement = {"Device ID: ": "", cf.domain: ""}
+        replacement = {"Device ID: ": "", Config.domain: ""}
         for i in replacement.keys():
             deviveID_find = deviveID_find.replace(i, replacement[i])
         result.update({"device": deviveID_find})
@@ -75,7 +75,7 @@ class Core:
     def write_result(self, sw_text: list):
         for i in range(0, len(sw_text)):
             sw_data = self.switch_data(sw_text[i])
-            part_one = f"{self.__set_number()} - {cf.hostname}: {sw_data["ports"][0]}"
+            part_one = f"{self.__set_number()} - {Config.hostname}: {sw_data["ports"][0]}"
             print(
                 f"{part_one:<70} ----> {sw_data["device"]}: {sw_data["ports"][1]}")
 
@@ -86,11 +86,11 @@ class Core:
                 host_line = line.strip()
 
         host_line = host_line.split(" ")
-        cf.hostname = host_line[0]
+        Config.hostname = host_line[0]
 
     def __set_number(self):
-        cf.counter += 1
-        result = cf.counter
+        Config.counter += 1
+        result = Config.counter
         if result > 0 and result < 10:
             result = f"00{result}"
         elif result >= 10 and result < 100:
@@ -109,7 +109,7 @@ class Core:
             print("Insert a character!")
 
     def show_banner(self):
-        print(cf.banner)
+        print(Config.banner)
         message = "Developer: github/mzarchi, version: 0.1 (202808)\n"
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
@@ -134,7 +134,8 @@ class App_DB:
         self.create_tables()
 
     def __open(self):
-        self.conn = sqlite3.connect("app_data.db")
+        cd = Config()
+        self.conn = sqlite3.connect(cd.db_dir)
         self.cursor = self.conn.cursor()
 
     def __close(self):
