@@ -3,3 +3,4 @@ encrypt.py
 __*
 *.db
 *test*
+.venv
