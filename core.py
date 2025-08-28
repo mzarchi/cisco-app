@@ -4,6 +4,7 @@ from encrypt import Encryption
 from netmiko import ConnectHandler
 from concurrent.futures import ThreadPoolExecutor
 
+import os
 import re
 import sys
 import time
@@ -131,11 +132,13 @@ class Core:
             time.sleep(0.1)
 
     def show_menu(self):
+        self.ter_cls()
         message = "Please select one of the options below:\n"
+        message += "\t0- App Settings (Edit all app settings)\n"
         message += "\t1- Switch Scan (Get list of your switches)\n"
         message += "\t2- Switches Link (Get uplink of your switches)\n"
         message += "\t3- IP Scan (Get list of your IP Address in your switch)\n"
-        message += "\t0- Exit\nPlease insert option number: "
+        message += "\te- Exit\nPlease insert option number: "
         return message
 
     def case2_handler(self):
@@ -207,6 +210,7 @@ class Core:
 
         Config.counter = 0
         input("Task finished! press Enter to continue ..")
+        os.system('cls')
 
     def get_datetime(self):
         result = {}
@@ -214,6 +218,72 @@ class Core:
         result.update({"date": now.strftime("%Y%m%d")})
         result.update({"time": now.strftime("%H%M%S")})
         return result
+
+    def ter_cls(self):
+        os.system('cls')
+
+    def app_settings_handler(self):
+        ab = App_DB()
+        en = Encryption()
+        self.ter_cls()
+        message = "Please select one of the options below:\n"
+        message += "\t1- Edit App Settings\n"
+        message += "\t2- Add/Edit/Remove SSH user login\n"
+        message += "\te- Exit from Settings\nPlease insert option number: "
+
+        while True:  # ID: ash_w1
+            case_number = input(message)
+
+            if case_number == "e":
+                break
+
+            match case_number:  # ID: ash_m1
+                case "1":
+                    pass
+
+                case "2":
+                    self.ter_cls()
+                    c2_message = "Please select one of the options below:\n"
+                    c2_message += "\t1- Add Admin\n"
+                    c2_message += "\t2- Edit Admin\n"
+                    c2_message += "\t3- Show Admin\n"
+                    c2_message += "\t4- Remove Admin\n"
+                    c2_message += "\te- Exit\nPlease insert option number: "
+                    while True:  # ID: ash_w2
+                        c2_case_number = input(c2_message)
+                        if c2_case_number == "e":
+                            break
+
+                        match c2_case_number:  # ID: ash_m2
+                            case "3":
+                                self.ter_cls()
+                                rows = ab.get_admin_data()
+                                for row in rows:
+                                    print(f"id:{row[0]}, username: {en.decode(row[1])}")
+                                input("Press enter to back ..")
+                                self.ter_cls()
+                                continue
+
+    def first_start_app(self):
+        db = App_DB()
+        user_data = {}
+        username = self.get_current_text("Please inser your username: ")
+        user_data.update({'username': username})
+        password = self.get_current_text("Please inser your password: ", False)
+        user_data.update({'password': password})
+        secret = self.get_current_text("Please inser your secret: ", False)
+        user_data.update({'secret': password if secret == '' else secret})
+        domain = self.get_current_text("Please inser your domain: ")
+        user_data.update({'domain': domain})
+        sw_core = self.get_current_text("Please inser your SW-Core IP: ")
+        user_data.update({'sw_core': sw_core})
+        subnet = self.get_current_text("Please inser your IP subnet: ")
+        user_data.update({'subnet': subnet})
+        csv_name = self.get_current_text("Please inser your CSV name: ")
+        user_data.update({'csv_name': csv_name})
+
+        db.insert_user_data(user_data)
+        self.ter_cls()
 
 
 """
@@ -264,15 +334,22 @@ class App_DB:
         try:
             self.__open()
             self.cursor.execute("""
+                                CREATE TABLE IF NOT EXISTS app_settings (
+                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    domain TEXT,
+                                    sw_core TEXT,
+                                    subnet TEXT,
+                                    password TEXT,
+                                    hint TEXT)
+                                """)
+
+            self.cursor.execute("""
                                 CREATE TABLE IF NOT EXISTS admin_data (
                                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                                     username TEXT NOT NULL,
                                     password TEXT NOT NULL,
                                     secret TEXT,
-                                    domain TEXT,
-                                    sw_core TEXT,
-                                    subnet TEXT,
-                                    csv_name TEXT)
+                                    tag TEXT NOT NULL)
                                 """)
 
             self.cursor.execute("""
@@ -359,3 +436,14 @@ class App_DB:
             sys.exit(1)
 
         return update
+
+    def get_admin_data(self):
+        self.__open()
+        try:
+            self.cursor.execute("SELECT * FROM admin_data")
+            rows = self.cursor.fetchall()
+            self.__close()
+            return rows
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-get_admin_data: {e}")
+            sys.exit(1)
