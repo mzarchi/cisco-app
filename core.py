@@ -245,9 +245,8 @@ class Core:
                     self.ter_cls()
                     c2_message = "Please select one of the options below:\n"
                     c2_message += "\t1- Add Admin\n"
-                    c2_message += "\t2- Edit Admin\n"
-                    c2_message += "\t3- Show Admin\n"
-                    c2_message += "\t4- Remove Admin\n"
+                    c2_message += "\t2- Show Admin\n"
+                    c2_message += "\t3- Remove Admin\n"
                     c2_message += "\te- Exit\nPlease insert option number: "
                     while True:  # ID: ash_w2
                         c2_case_number = input(c2_message)
@@ -279,7 +278,7 @@ class Core:
                                 self.ter_cls()
                                 continue
 
-                            case "3":
+                            case "2":
                                 self.ter_cls()
                                 rows = ab.get_admin_data()
                                 for row in rows:
@@ -288,6 +287,12 @@ class Core:
                                 input("Press enter to back ..")
                                 self.ter_cls()
                                 continue
+
+                            case "3":
+                                self.ter_cls()
+                                c3_username = input(
+                                    "Input username for remove: ")
+                                ab.del_admin_data(en.encode(c3_username))
 
     def first_start_app(self):
         db = App_DB()
@@ -492,4 +497,14 @@ class App_DB:
             return rows
         except Exception as e:
             print(f"- F-core, C-App_DB, D-get_admin_data: {e}")
+            sys.exit(1)
+
+    def del_admin_data(self, username):
+        self.__open()
+        try:
+            self.cursor.execute(
+                "DELETE FROM admin_data WHERE username = ?", (username,))
+            self.__close()
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-del_admin_data: {e}")
             sys.exit(1)
