@@ -255,11 +255,36 @@ class Core:
                             break
 
                         match c2_case_number:  # ID: ash_m2
+                            case "1":
+                                self.ter_cls()
+                                user_data = {}
+                                username = self.get_current_text(
+                                    "Please inser your username: ")
+                                password = self.get_current_text(
+                                    "Please inser your password: ", False)
+                                secret = self.get_current_text(
+                                    "Please inser your secret: ", False)
+                                tag = self.get_current_text(
+                                    "Please inser admin tag: ")
+                                user_data.update({
+                                    "username": username,
+                                    "password": password,
+                                    "secret": secret,
+                                    "tag": tag
+                                })
+                                ab.set_admin_data(user_data)
+
+                                input(
+                                    "User Added to Database!\nPress enter to back ..")
+                                self.ter_cls()
+                                continue
+
                             case "3":
                                 self.ter_cls()
                                 rows = ab.get_admin_data()
                                 for row in rows:
-                                    print(f"id:{row[0]}, username: {en.decode(row[1])}")
+                                    print(
+                                        f"id:{row[0]} - Username: {en.decode(row[1])}, Tag: {en.decode(row[4])}")
                                 input("Press enter to back ..")
                                 self.ter_cls()
                                 continue
@@ -282,7 +307,7 @@ class Core:
         csv_name = self.get_current_text("Please inser your CSV name: ")
         user_data.update({'csv_name': csv_name})
 
-        db.insert_user_data(user_data)
+        # db.insert_user_data(user_data)
         self.ter_cls()
 
 
@@ -400,7 +425,7 @@ class App_DB:
                     en.encode(data['domain']),
                     en.encode(data['sw_core']),
                     en.encode(data['subnet']),
-                    en.encode(data['csv_name'],)
+                    en.encode(data['csv_name'])
                 ))
             self.__close()
         except Exception as e:
@@ -436,6 +461,27 @@ class App_DB:
             sys.exit(1)
 
         return update
+
+    def set_admin_data(self, data):
+        try:
+            en = Encryption()
+            self.__open()
+            self.cursor.execute(
+                """INSERT INTO admin_data (
+                        username,
+                        password,
+                        secret,
+                        tag
+                    ) VALUES (?, ?, ?, ?)""", (
+                    en.encode(data['username']),
+                    en.encode(data['password']),
+                    en.encode(data['secret']),
+                    en.encode(data['tag'])
+                ))
+            self.__close()
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-set_admin_data: {e}")
+            sys.exit(1)
 
     def get_admin_data(self):
         self.__open()

@@ -7,9 +7,6 @@ cf = Config()
 ad = App_DB()
 cr = Core()
 
-if not ad.count_user():
-    cr.first_start_app()
-
 # cr.show_banner()
 # time.sleep(2)
 switch = 0
