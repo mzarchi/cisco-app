@@ -281,9 +281,9 @@ class Core:
                             case "2":
                                 self.ter_cls()
                                 rows = ab.get_admin_data()
-                                for row in rows:
+                                for i, row in enumerate(rows):
                                     print(
-                                        f"id:{row[0]} - Username: {en.decode(row[1])}, Tag: {en.decode(row[4])}")
+                                        f"id:{i+1} - Username: {en.decode(row[1])}, Tag: {en.decode(row[4])}")
                                 input("Press enter to back ..")
                                 self.ter_cls()
                                 continue
@@ -507,4 +507,24 @@ class App_DB:
             self.__close()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-del_admin_data: {e}")
+            sys.exit(1)
+
+    def set_dict_admin_data(self):
+        try:
+            cf = Config()
+            en = Encryption()
+            self.__open()
+            self.cursor.execute("SELECT * FROM admin_data")
+            rows = self.cursor.fetchall()
+            
+            for i, row in enumerate(rows):
+                cf.auth_dict.update({i:{
+                    "type": en.decode(row[4]),
+                    "username": en.decode(row[1]),
+                    "password": en.decode(row[2]),
+                    "secret": en.decode(row[3])
+                }})
+            
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-set_dict_admin_data: {e}")
             sys.exit(1)
