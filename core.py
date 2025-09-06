@@ -27,7 +27,6 @@ import subprocess
 | ░░░░░     ░░░░░  ░░░░░░     ░░░░░  ░░░░ ░░░░░  ░░░░░░   ░░░░░░░░ ░░░░░░           |
 |                                                                                   |
 +-----------------------------------------------------------------------------------+
-
 """
 
 
@@ -315,6 +314,13 @@ class Core:
         # db.insert_user_data(user_data)
         self.ter_cls()
 
+    def case1_handler(self):
+        self.scan_network()
+        for i, ip in enumerate(Config.all_switches):
+            print(f"{i+1}- {ip}")
+            
+        input("Press any key to exit ..")
+
 
 """
 +-----------------------------------------------------------------------------------+
@@ -516,15 +522,15 @@ class App_DB:
             self.__open()
             self.cursor.execute("SELECT * FROM admin_data")
             rows = self.cursor.fetchall()
-            
+
             for i, row in enumerate(rows):
-                cf.auth_dict.update({i:{
+                cf.auth_dict.update({i: {
                     "type": en.decode(row[4]),
                     "username": en.decode(row[1]),
                     "password": en.decode(row[2]),
                     "secret": en.decode(row[3])
                 }})
-            
+
         except Exception as e:
             print(f"- F-core, C-App_DB, D-set_dict_admin_data: {e}")
             sys.exit(1)

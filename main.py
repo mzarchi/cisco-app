@@ -24,7 +24,7 @@ while True:
                 cr.app_settings_handler()
 
             case "1":
-                continue
+                cr.case1_handler()
 
             case "2":
                 cr.case2_handler()
