@@ -99,6 +99,53 @@ class Core:
 
         host_line = host_line.split(" ")
         Config.hostname = host_line[0]
+        return host_line[0]
+
+    def find_model(self, text):
+        model_line = None
+        for line in text.splitlines():
+            if re.search(r'Model Number', line, re.IGNORECASE):
+                model_line = line.strip()
+
+        model_line = model_line.split(":")
+        result = model_line[1].replace(" ", "")
+        return result
+
+    def find_mac(self, text):
+        mac_line = None
+        for line in text.splitlines():
+            if re.search(r'Base Ethernet MAC Address', line, re.IGNORECASE):
+                mac_line = line.strip()
+                mac_line = re.search(
+                    r'([0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5})', mac_line)
+
+        return mac_line.group(0)
+
+    def get_uptime(self, text):
+        uptime = {"years": 0, "weeks": 0, "days": 0, "hours": 0, "minutes": 0}
+
+        for line in text.splitlines():
+            if re.search(r"uptime\s+is", line, re.IGNORECASE):
+                uptime_line = line.strip()
+                pattern = r"(\d+)\s+(year|years|week|weeks|day|days|hour|hours|minute|minutes)"
+                matches = re.findall(pattern, uptime_line)
+
+                for value, unit in matches:
+                    value = int(value)
+                    if unit.startswith("year"):
+                        uptime["years"] = value
+                    elif unit.startswith("week"):
+                        uptime["weeks"] = value
+                    elif unit.startswith("day"):
+                        uptime["days"] = value
+                    elif unit.startswith("hour"):
+                        uptime["hours"] = value
+                    elif unit.startswith("minute"):
+                        uptime["minutes"] = value
+
+                all_days = (uptime['years'] * 365) + \
+                    (uptime['weeks'] * 7) + uptime['days']
+                return all_days, uptime['hours'], uptime['minutes']
 
     def __set_number(self):
         Config.counter += 1
@@ -315,11 +362,65 @@ class Core:
         self.ter_cls()
 
     def case1_handler(self):
+        cf = Config()
+        ad = App_DB()
+        dt = self.get_datetime()
         self.scan_network()
+        dt = self.get_datetime()
         for i, ip in enumerate(Config.all_switches):
-            print(f"{i+1}- {ip}")
-            
+            try:
+                cnt = self.switch_connect(ip)
+                version_data = cnt.send_command("show version")
+                self.find_hostname(version_data)
+                model = self.find_model(version_data)
+                sw_mac = self.find_mac(version_data)
+                days, hours, minutes = self.get_uptime(version_data)
+                data = {
+                    'ip': ip,
+                    'hostname': cf.hostname,
+                    'model': model,
+                    'mac': sw_mac,
+                    'insert_date': f"{dt['date']} {dt['time']}",
+                    'update_date': f"{dt['date']} {dt['time']}"
+                }
+                update = ad.manage_switch_data(data)
+                update_msg = "update" if update else "insert (New!)"
+                uptime_line = f"{i+1:<3}- Hostname: {cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<3} d, {hours:<2} h, {minutes:<2} m, Action: {update_msg}"
+                with open(f"{cf.data_dir}Switches-List_{dt['date']}-{dt['time']}.txt", "a") as file:
+                    file.write(f"{uptime_line} \n")
+                print(uptime_line)
+            except Exception as e:
+                # print(f"- F-core, C-Core, D-case1_handler({ip}): {e}")
+                continue
+
         input("Press any key to exit ..")
+
+    def switch_connect(self, ip):
+        try:
+            cf = Config()
+            auth_index = 0
+            while True:
+                try:
+                    cisco_switch = {
+                        'device_type': 'cisco_ios',
+                        'host': ip,
+                        'username': cf.auth_dict[auth_index]['username'],
+                        'password': cf.auth_dict[auth_index]['password'],
+                        'secret': cf.auth_dict[auth_index]['secret'],
+                    }
+
+                    connect = ConnectHandler(**cisco_switch)
+                    connect.enable()
+                    return connect
+
+                except Exception as e:
+                    if auth_index < len(cf.auth_dict):
+                        auth_index += 1
+                        continue
+                    else:
+                        break
+        except Exception as e:
+            print(f"- F-core, C-Core, D-switch_connect: {e}")
 
 
 """
@@ -396,6 +497,17 @@ class App_DB:
                                     update_date TEXT NOT NULL)
                                 """)
 
+            self.cursor.execute("""
+                                CREATE TABLE IF NOT EXISTS switches_list (
+                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    ip TEXT NOT NULL,
+                                    hostname TEXT NOT NULL,
+                                    model TEXT NOT NULL,
+                                    mac TEXT NOT NULL,
+                                    insert_date TEXT NOT NULL,
+                                    update_date TEXT NOT NULL)
+                                """)
+
             self.__close()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-create_tables: {e}")
@@ -442,6 +554,50 @@ class App_DB:
         except Exception as e:
             print(f"- F-core, C-App_DB, D-insert_user_data: {e}")
             sys.exit(1)
+
+    def insert_switch_data(self, data):
+        try:
+            self.cursor.execute(
+                """INSERT INTO switches_list (
+                        ip,
+                        hostname,
+                        model,
+                        mac,
+                        insert_date,
+                        update_date
+                    ) VALUES (?, ?, ?, ?, ?, ?)""", (
+                    data['ip'],
+                    data['hostname'],
+                    data['model'],
+                    data['mac'],
+                    data['insert_date'],
+                    data['update_date']
+                ))
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-insert_switch_data: {e}")
+            sys.exit(1)
+
+    def manage_switch_data(self, data):
+        update = False
+        try:
+            self.__open()
+            self.cursor.execute(
+                "SELECT * FROM switches_list WHERE mac = ?", (data['mac'],))
+
+            row = self.cursor.fetchone()
+            if row:
+                self.cursor.execute(
+                    "UPDATE switches_list SET update_date = ? WHERE mac = ?", (data['update_date'], data['mac']))
+                update = True
+            else:
+                self.insert_switch_data(data)
+
+            self.__close()
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-manage_switch_link: {e}")
+            sys.exit(1)
+
+        return update
 
     def insert_switch_link(self, link, datetime):
         try:
