@@ -340,27 +340,6 @@ class Core:
                                     "Input username for remove: ")
                                 ab.del_admin_data(en.encode(c3_username))
 
-    def first_start_app(self):
-        db = App_DB()
-        user_data = {}
-        username = self.get_current_text("Please inser your username: ")
-        user_data.update({'username': username})
-        password = self.get_current_text("Please inser your password: ", False)
-        user_data.update({'password': password})
-        secret = self.get_current_text("Please inser your secret: ", False)
-        user_data.update({'secret': password if secret == '' else secret})
-        domain = self.get_current_text("Please inser your domain: ")
-        user_data.update({'domain': domain})
-        sw_core = self.get_current_text("Please inser your SW-Core IP: ")
-        user_data.update({'sw_core': sw_core})
-        subnet = self.get_current_text("Please inser your IP subnet: ")
-        user_data.update({'subnet': subnet})
-        csv_name = self.get_current_text("Please inser your CSV name: ")
-        user_data.update({'csv_name': csv_name})
-
-        # db.insert_user_data(user_data)
-        self.ter_cls()
-
     def case1_handler(self):
         cf = Config()
         ad = App_DB()
@@ -375,17 +354,23 @@ class Core:
                 model = self.find_model(version_data)
                 sw_mac = self.find_mac(version_data)
                 days, hours, minutes = self.get_uptime(version_data)
+                ports, ios_version, ios_type = self.get_ios_details(
+                    version_data)
                 data = {
                     'ip': ip,
                     'hostname': cf.hostname,
                     'model': model,
                     'mac': sw_mac,
+                    'ports': ports,
+                    'ios_version': ios_version,
+                    'ios_type': ios_type,
                     'insert_date': f"{dt['date']} {dt['time']}",
                     'update_date': f"{dt['date']} {dt['time']}"
                 }
+
                 update = ad.manage_switch_data(data)
                 update_msg = "update" if update else "insert (New!)"
-                uptime_line = f"{i+1:<3}- Hostname: {cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<3} d, {hours:<2} h, {minutes:<2} m, Action: {update_msg}"
+                uptime_line = f"{i+1:<3}- Hostname: {cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<3} d, {hours:<2} h, {minutes:<2} m, real-ports: {ports:<3} IOS-version: {ios_version:<15} IOS-type: {ios_type:<25} Action: {update_msg}"
                 with open(f"{cf.data_dir}Switches-List_{dt['date']}-{dt['time']}.txt", "a") as file:
                     file.write(f"{uptime_line} \n")
                 print(uptime_line)
@@ -394,6 +379,19 @@ class Core:
                 continue
 
         input("Press any key to exit ..")
+
+    def get_ios_details(self, text):
+        pattern = r"\*\s+\d+\s+(\d+)\s+\S+\s+(\S+)\s+(\S+)"
+
+        match = re.search(pattern, text)
+        if match:
+            ports = match.group(1)        # Ports
+            ios_version = match.group(2)  # SW Version
+            ios_type = match.group(3)     # SW Image
+            return ports, ios_version, ios_type
+
+        else:
+            return 0, 0, 0
 
     def switch_connect(self, ip):
         try:
@@ -504,6 +502,9 @@ class App_DB:
                                     hostname TEXT NOT NULL,
                                     model TEXT NOT NULL,
                                     mac TEXT NOT NULL,
+                                    ports TEXT NOT NULL,
+                                    ios_version TEXT NOT NULL,
+                                    ios_type TEXT NOT NULL,
                                     insert_date TEXT NOT NULL,
                                     update_date TEXT NOT NULL)
                                 """)
@@ -563,13 +564,19 @@ class App_DB:
                         hostname,
                         model,
                         mac,
+                        ports,
+                        ios_version,
+                        ios_type,
                         insert_date,
                         update_date
-                    ) VALUES (?, ?, ?, ?, ?, ?)""", (
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", (
                     data['ip'],
                     data['hostname'],
                     data['model'],
                     data['mac'],
+                    data['ports'],
+                    data['ios_version'],
+                    data['ios_type'],
                     data['insert_date'],
                     data['update_date']
                 ))

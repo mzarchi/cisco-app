@@ -11,7 +11,7 @@ class Config:
     root_dir = sys.argv[0].replace("main.py", "")
     data_dir = ""
     domain = ""
-    ssh_switch_range = "192.168.100"  # /24
+    ssh_switch_range = "192.168.100.x"  # /24
     auth_dict = {}
     banner = """
    █████████   ███                                 █████████                      
