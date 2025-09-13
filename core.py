@@ -274,7 +274,7 @@ class Core:
         self.ter_cls()
         message = "Please select one of the options below:\n"
         message += "\t1- Edit App Settings\n"
-        message += "\t2- Add/Edit/Remove SSH user login\n"
+        message += "\t2- Add/Remove SSH user login\n"
         message += "\te- Exit from Settings\nPlease insert option number: "
 
         while True:  # ID: ash_w1
@@ -346,7 +346,8 @@ class Core:
         dt = self.get_datetime()
         self.scan_network()
         dt = self.get_datetime()
-        for i, ip in enumerate(Config.all_switches):
+        counter = 1
+        for ip in (Config.all_switches):
             try:
                 cnt = self.switch_connect(ip)
                 version_data = cnt.send_command("show version")
@@ -367,10 +368,11 @@ class Core:
                     'insert_date': f"{dt['date']} {dt['time']}",
                     'update_date': f"{dt['date']} {dt['time']}"
                 }
-
                 update = ad.manage_switch_data(data)
                 update_msg = "update" if update else "insert (New!)"
-                uptime_line = f"{i+1:<3}- Hostname: {cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<3} d, {hours:<2} h, {minutes:<2} m, real-ports: {ports:<3} IOS-version: {ios_version:<15} IOS-type: {ios_type:<25} Action: {update_msg}"
+                uptime_line = f"{counter:<3}- Hostname: {cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<3} d, {hours:<2} h, {minutes:<2} m, real-ports: {ports:<3} IOS-version: {ios_version:<15} IOS-type: {ios_type:<25} Action: {update_msg}"
+                counter += 1
+                # uptime_line = f"{counter:<3}- Hostname: {cf.hostname:<30} Uptime: {days:<3} d, {hours:<2} h, {minutes:<2} m"
                 with open(f"{cf.data_dir}Switches-List_{dt['date']}-{dt['time']}.txt", "a") as file:
                     file.write(f"{uptime_line} \n")
                 print(uptime_line)
