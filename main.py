@@ -10,6 +10,7 @@ cr = Core()
 # cr.show_banner()
 # time.sleep(2)
 ad.set_dict_admin_data()
+ad.set_dict_ipsubnet_data()
 switch = 0
 while True:
     switch = input(cr.show_menu())

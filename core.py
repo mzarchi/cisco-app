@@ -11,6 +11,7 @@ import time
 import getpass
 import sqlite3
 import platform
+import ipaddress
 import subprocess
 
 
@@ -19,9 +20,9 @@ import subprocess
 |                                                                                   |
 |  ██████   ██████           █████    █████                   █████                 |
 | ░░██████ ██████           ░░███    ░░███                   ░░███                  |
-|  ░███░█████░███   ██████  ███████   ░███████    ██████   ███████   █████          | 
-|  ░███░░███ ░███  ███░░███░░░███░    ░███░░███  ███░░███ ███░░███  ███░░           | 
-|  ░███ ░░░  ░███ ░███████   ░███     ░███ ░███ ░███ ░███░███ ░███ ░░█████          | 
+|  ░███░█████░███   ██████  ███████   ░███████    ██████   ███████   █████          |
+|  ░███░░███ ░███  ███░░███░░░███░    ░███░░███  ███░░███ ███░░███  ███░░           |
+|  ░███ ░░░  ░███ ░███████   ░███     ░███ ░███ ░███ ░███░███ ░███ ░░█████          |
 |  ░███      ░███ ░███░░░    ░███ ███ ░███ ░███ ░███ ░███░███ ░███  ░░░░███         |
 |  █████     █████░░██████   ░░█████  ████ █████░░██████ ░░████████ ██████          |
 | ░░░░░     ░░░░░  ░░░░░░     ░░░░░  ░░░░ ░░░░░  ░░░░░░   ░░░░░░░░ ░░░░░░           |
@@ -35,20 +36,27 @@ class Core:
         pass
 
     def scan_network(self):
-        with ThreadPoolExecutor(max_workers=50) as executor:
-            for i in range(1, 255):
-                ip = f"{Config.ssh_switch_range}.{i}"
-                executor.submit(self.ping_ip, ip)
+        ip_subnet = Config.ssh_switch_range
+        network = ipaddress.ip_network(ip_subnet, strict=False)
 
-    def ping_ip(self, ip):
-        param = "-n" if platform.system().lower() == "windows" else "-c"
-        command = ["ping", param, "1", ip]
-        try:
-            subprocess.run(command, stdout=subprocess.DEVNULL,
-                           stderr=subprocess.DEVNULL, timeout=1)
-            Config.all_switches.append(ip)
-        except subprocess.TimeoutExpired:
-            pass
+        def ping(ip):
+            param = "-n" if platform.system().lower() == "windows" else "-c"
+            command = ["ping", param, "1", ip]
+            try:
+                result = subprocess.run(command, stdout=subprocess.DEVNULL,
+                                        stderr=subprocess.DEVNULL, timeout=1)
+                if result.returncode == 0:
+                    return ip
+            except subprocess.TimeoutExpired:
+                return None
+
+        with ThreadPoolExecutor(max_workers=50) as executor:
+            futures = [executor.submit(ping, str(host))
+                       for host in network.hosts()]
+            for future in futures:
+                result = future.result()
+                if result:
+                    Config.all_switches.append(result)
 
     def read_file(self, dir: str, file: str):
         content = None
@@ -273,7 +281,7 @@ class Core:
         en = Encryption()
         self.ter_cls()
         message = "Please select one of the options below:\n"
-        message += "\t1- Edit App Settings\n"
+        message += "\t1- Add/Remove SSH data\n"
         message += "\t2- Add/Remove SSH user login\n"
         message += "\te- Exit from Settings\nPlease insert option number: "
 
@@ -281,11 +289,62 @@ class Core:
             case_number = input(message)
 
             if case_number == "e":
+                self.ter_cls()
                 break
 
             match case_number:  # ID: ash_m1
                 case "1":
-                    pass
+                    self.ter_cls()
+                    c1_message = "Please select one of the options below:\n"
+                    c1_message += "\t1- Add SSH Data\n"
+                    c1_message += "\t2- Show SSH Data\n"
+                    c1_message += "\t3- Remove SSH Data\n"
+                    c1_message += "\te- Exit\nPlease insert option number: "
+                    while True:
+                        c1_case_number = input(c1_message)
+                        if c1_case_number == "e":
+                            self.ter_cls()
+                            break
+
+                        match c1_case_number:
+                            case "1":
+                                self.ter_cls()
+                                ipsubnet_data = {}
+                                ip_subnet = self.get_current_text(
+                                    "Please enter ip and subnet (ex: 192.168.1.0/24): ")
+                                domain = self.get_current_text(
+                                    "Please enter domain: ")
+
+                                ipsubnet_data.update({
+                                    "ip_subnet": ip_subnet,
+                                    "domain": domain
+                                })
+
+                                ab.set_ipsubnet_data(ipsubnet_data)
+                                input(
+                                    "Data Added to Database!\nPress enter to back ..")
+                                self.ter_cls()
+                                continue
+
+                            case "2":
+                                self.ter_cls()
+                                ip_subnet = ab.set_dict_ipsubnet_data()
+
+                                for key, value in ip_subnet.items():
+                                    print(
+                                        f"{key+1:<3} - IP: {value['ip_subnet']:<18} Domain: {value['domain']}")
+
+                                input("\nPress any key to return ...")
+                                continue
+
+                            case "3":
+                                self.ter_cls()
+                                ip_subnet = self.get_current_text(
+                                    "Please enter ip and subnet (ex: 192.168.1.0/24): ")
+                                ab.del_ipsubnet_data(ip_subnet)
+
+                                input("\nPress any key to return ...")
+                                continue
 
                 case "2":
                     self.ter_cls()
@@ -471,13 +530,10 @@ class App_DB:
         try:
             self.__open()
             self.cursor.execute("""
-                                CREATE TABLE IF NOT EXISTS app_settings (
+                                CREATE TABLE IF NOT EXISTS ip_domain (
                                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                    domain TEXT,
-                                    sw_core TEXT,
-                                    subnet TEXT,
-                                    password TEXT,
-                                    hint TEXT)
+                                    ip_subnet TEXT,
+                                    domain TEXT)
                                 """)
 
             self.cursor.execute("""
@@ -638,6 +694,27 @@ class App_DB:
 
         return update
 
+    def set_ipsubnet_data(self, data):
+        try:
+            self.__open()
+            self.cursor.execute(
+                "SELECT * FROM ip_domain WHERE ip_subnet = ?", (data['ip_subnet'],))
+            row = self.cursor.fetchone()
+
+            if not row:
+                self.cursor.execute(
+                    """INSERT INTO ip_domain (
+                            ip_subnet,
+                            domain
+                        ) VALUES (?, ?)""", (
+                        data['ip_subnet'],
+                        data['domain'],
+                    ))
+            self.__close()
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-set_ipsubnet_data: {e}")
+            sys.exit(1)
+
     def set_admin_data(self, data):
         try:
             en = Encryption()
@@ -698,4 +775,35 @@ class App_DB:
 
         except Exception as e:
             print(f"- F-core, C-App_DB, D-set_dict_admin_data: {e}")
+            sys.exit(1)
+
+    def set_dict_ipsubnet_data(self):
+        try:
+            self.__open()
+            ip_subnet = {}
+            self.cursor.execute("SELECT * FROM ip_domain")
+            rows = self.cursor.fetchall()
+
+            for i, row in enumerate(rows):
+                Config.ssh_switch_range = row[1]
+                Config.domain = row[2]
+
+                ip_subnet.update({i: {
+                    "ip_subnet": row[1],
+                    "domain": row[2],
+                }})
+
+            return ip_subnet
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-set_dict_ipsubnet_data: {e}")
+            sys.exit(1)
+
+    def del_ipsubnet_data(self, ipsubnet):
+        self.__open()
+        try:
+            self.cursor.execute(
+                "DELETE FROM ip_domain WHERE ip_subnet = ?", (ipsubnet,))
+            self.__close()
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-del_ipsubnet_data: {e}")
             sys.exit(1)
