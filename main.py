@@ -36,5 +36,5 @@ while True:
 print("Good bye ツ")
 time.sleep(2)
 
-# pyinstaller --onefile --icon=icon/cisco-app.ico main.py
+# pyinstaller --onefile --icon=icon/cisco-app.ico --name=Cisco-App main.py
 
