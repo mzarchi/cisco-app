@@ -7,8 +7,8 @@ cf = Config()
 ad = App_DB()
 cr = Core()
 
-# cr.show_banner()
-# time.sleep(2)
+cr.show_banner()
+time.sleep(2)
 ad.set_dict_admin_data()
 ad.set_dict_ipsubnet_data()
 switch = 0
@@ -35,3 +35,6 @@ while True:
 
 print("Good bye ツ")
 time.sleep(2)
+
+# pyinstaller --onefile --icon=icon/cisco-app.ico main.py
+
