@@ -1,6 +1,6 @@
-import getpass
-import sys
 import os
+import sys
+import getpass
 
 
 class Config:
@@ -11,7 +11,7 @@ class Config:
     root_dir = sys.argv[0].replace("main.py", "")
     data_dir = ""
     domain = ""
-    ssh_switch_range = "192.168.100.x"  # /24
+    ssh_switch_range = ""
     auth_dict = {}
     banner = """
    █████████   ███                                 █████████                      
@@ -30,7 +30,6 @@ class Config:
         self.create_db_dir()
         pass
 
-    
     def create_db_dir(self):
         user = getpass.getuser()
         db_dirs = f"C:/Users/{user}/AppData/Local/ca_data/"
