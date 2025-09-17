@@ -177,7 +177,7 @@ class Core:
 
     def show_banner(self):
         print(Config.banner)
-        message = "Developer: github/mzarchi, version: 0.1 (202509)\n"
+        message = f"Developer: github/mzarchi, version: 0.1 ({Config.version})\n"
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
         message += "I always live in the depths of the Internet ❤️"
@@ -345,6 +345,7 @@ class Core:
 
                                 input("\nPress any key to return ...")
                                 continue
+                        ab.set_dict_ipsubnet_data()
 
                 case "2":
                     self.ter_cls()
@@ -398,6 +399,8 @@ class Core:
                                 c3_username = input(
                                     "Input username for remove: ")
                                 ab.del_admin_data(en.encode(c3_username))
+
+                    ab.set_dict_admin_data()
 
     def case1_handler(self):
         cf = Config()
