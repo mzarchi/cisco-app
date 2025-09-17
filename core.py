@@ -177,7 +177,7 @@ class Core:
 
     def show_banner(self):
         print(Config.banner)
-        message = f"Developer: github/mzarchi, version: 0.1 ({Config.version})\n"
+        message = f"Developer: github/mzarchi, version: {Config.version}\n"
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
         message += "I always live in the depths of the Internet ❤️"
