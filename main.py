@@ -31,7 +31,7 @@ while True:
                 cr.case2_handler()
 
             case "3":
-                continue
+                cr.case3_handler()
 
 print("Good bye ツ")
 time.sleep(2)

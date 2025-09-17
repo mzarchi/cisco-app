@@ -2,6 +2,7 @@ from config import Config
 from datetime import datetime
 from encrypt import Encryption
 from netmiko import ConnectHandler
+from netmiko.exceptions import NetmikoTimeoutException, NetMikoAuthenticationException
 from concurrent.futures import ThreadPoolExecutor
 
 import os
@@ -475,14 +476,54 @@ class Core:
                     connect.enable()
                     return connect
 
+                except NetmikoTimeoutException:
+                    return None
                 except Exception as e:
                     if auth_index < len(cf.auth_dict):
                         auth_index += 1
                         continue
                     else:
                         break
+
         except Exception as e:
             print(f"- F-core, C-Core, D-switch_connect: {e}")
+
+    def case3_handler(self):
+        counter = 1
+        self.scan_network()
+        dt = self.get_datetime()
+        for hip in Config.all_switches:
+            connect = self.switch_connect(hip)
+            if connect is None:
+                continue
+
+            version_data = connect.send_command("show version")
+            model = self.find_model(version_data)
+            model_number = re.findall(r"\d{4}", model)
+
+            sidta = connect.send_command("show ip device tracking all")
+            if "%" in sidta:
+                sidta = connect.send_command("show device-tracking database")
+
+            pattern = re.compile(
+                r"(\d+\.\d+\.\d+\.\d+)"
+                r".*?"
+                r"([0-9A-Fa-f]{4}(?:\.[0-9A-Fa-f]{4}){2})"
+                r".*?"
+                r"(\S*\/\S*)"
+            )
+
+            for line in sidta.splitlines():
+                match = pattern.search(line)
+                if match:
+                    ip, mac, port = match.groups()
+                    line = f"{counter:<4}- IP: {ip:<18} MAC: {mac:<18} Switch: {hip:<18} Port: ({model_number[0]}) {port}"
+                    with open(f"{Config.data_dir}IP-List_{dt['date']}-{dt['time']}.txt", "a") as file:
+                        file.write(f"{line} \n")
+                    print(line)
+                    counter += 1
+
+        input("Press any key to exit ..")
 
 
 """
