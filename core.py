@@ -2,7 +2,7 @@ from config import Config
 from datetime import datetime
 from encrypt import Encryption
 from netmiko import ConnectHandler
-from netmiko.exceptions import NetmikoTimeoutException, NetMikoAuthenticationException
+from netmiko.exceptions import NetmikoTimeoutException
 from concurrent.futures import ThreadPoolExecutor
 
 import os
@@ -182,9 +182,7 @@ class Core:
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
         message += "I always live in the depths of the Internet ❤️"
-        for c in message:
-            print(c, end='', flush=True)
-            time.sleep(0.1)
+        print(message)
 
     def show_menu(self):
         self.ter_cls()
@@ -489,10 +487,11 @@ class Core:
             print(f"- F-core, C-Core, D-switch_connect: {e}")
 
     def case3_handler(self):
+        cf = Config()
         counter = 1
         self.scan_network()
         dt = self.get_datetime()
-        for hip in Config.all_switches:
+        for hip in cf.all_switches:
             connect = self.switch_connect(hip)
             if connect is None:
                 continue
@@ -518,7 +517,7 @@ class Core:
                 if match:
                     ip, mac, port = match.groups()
                     line = f"{counter:<4}- IP: {ip:<18} MAC: {mac:<18} Switch: {hip:<18} Port: ({model_number[0]}) {port}"
-                    with open(f"{Config.data_dir}IP-List_{dt['date']}-{dt['time']}.txt", "a") as file:
+                    with open(f"{cf.data_dir}IP-List_{dt['date']}-{dt['time']}.txt", "a") as file:
                         file.write(f"{line} \n")
                     print(line)
                     counter += 1
