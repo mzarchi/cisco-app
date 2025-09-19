@@ -5,7 +5,7 @@ import getpass
 
 class Config:
     counter = 0
-    version = 20250917
+    version = 20250919
     hostname = None
     all_switches = []
     db_dir = ""
