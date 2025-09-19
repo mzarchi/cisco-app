@@ -261,7 +261,9 @@ class Core:
         with open(f"{cf.data_dir}Switch-Links_{dt['date']}-{dt['time']}.txt", "a") as file:
             file.write(result)
 
+        switches.clear()
         Config.counter = 0
+        Config.all_switches.clear()
         input("Task finished! press Enter to continue ..")
         os.system('cls')
 
@@ -440,7 +442,8 @@ class Core:
             except Exception as e:
                 # print(f"- F-core, C-Core, D-case1_handler({ip}): {e}")
                 continue
-
+        
+        Config.all_switches.clear()
         input("Press any key to exit ..")
 
     def get_ios_details(self, text):
@@ -488,6 +491,7 @@ class Core:
 
     def case3_handler(self):
         cf = Config()
+        db = App_DB()
         counter = 1
         self.scan_network()
         dt = self.get_datetime()
@@ -512,16 +516,25 @@ class Core:
                 r"(\S*\/\S*)"
             )
 
+            date_time = f"{dt['date']} {dt['time']}"
             for line in sidta.splitlines():
                 match = pattern.search(line)
                 if match:
                     ip, mac, port = match.groups()
-                    line = f"{counter:<4}- IP: {ip:<18} MAC: {mac:<18} Switch: {hip:<18} Port: ({model_number[0]}) {port}"
+                    imsp = f"{ip}|{mac}|{hip}|{port}"
+                    new_imsp = db.insert_ipdata(imsp, date_time)
+                    imsp_sec = "Update"
+                    if new_imsp:
+                        imsp_sec = "Insert (New!)"
+
+                    line = f"{counter:<4}- IP: {ip:<18} MAC: {mac:<18} Switch: {hip:<18} Port: ({model_number[0]}) {port:<25} Action: {imsp_sec}"
                     with open(f"{cf.data_dir}IP-List_{dt['date']}-{dt['time']}.txt", "a") as file:
                         file.write(f"{line} \n")
                     print(line)
                     counter += 1
-
+                    time.sleep(0.001)
+                    
+        cf.all_switches.clear()
         input("Press any key to exit ..")
 
 
@@ -610,6 +623,13 @@ class App_DB:
                                     update_date TEXT NOT NULL)
                                 """)
 
+            self.cursor.execute("""
+                                CREATE TABLE IF NOT EXISTS ip_data (
+                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    imsp TEXT NOT NULL,
+                                    insert_date TEXT NOT NULL,
+                                    update_date TEXT NOT NULL)
+                                """)
             self.__close()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-create_tables: {e}")
@@ -849,4 +869,34 @@ class App_DB:
             self.__close()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-del_ipsubnet_data: {e}")
+            sys.exit(1)
+
+    def insert_ipdata(self, imsp, date_time):
+        try:
+            new_imsp = False
+            self.__open()
+            self.cursor.execute(
+                "SELECT * FROM ip_data WHERE imsp = ?", (imsp,))
+            row = self.cursor.fetchone()
+
+            if not row:
+                new_imsp = True
+                self.cursor.execute(
+                    """INSERT INTO ip_data (
+                            imsp,
+                            insert_date,
+                            update_date
+                        ) VALUES (?, ?, ?)""", (
+                        imsp,
+                        date_time,
+                        date_time,
+                    ))
+            else:
+                self.cursor.execute(
+                    "UPDATE ip_data SET update_date = ? WHERE imsp = ?", (date_time, imsp))
+
+            self.__close()
+            return new_imsp
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-insert_ipdata: {e}")
             sys.exit(1)
