@@ -4,13 +4,13 @@ from core import Core, App_DB
 import time
 
 cf = Config()
-ad = App_DB()
+db = App_DB()
 cr = Core()
 
 cr.show_banner()
 time.sleep(2)
-ad.set_dict_admin_data()
-ad.set_dict_ipsubnet_data()
+db.set_dict_admin_data()
+db.set_dict_ipsubnet_data()
 switch = 0
 while True:
     switch = input(cr.show_menu())
@@ -31,7 +31,7 @@ while True:
                 cr.case2_handler()
 
             case "3":
-                cr.case3_handler()
+                cr.coreCaseFourHandler()
 
 print("Good bye ツ")
 time.sleep(2)

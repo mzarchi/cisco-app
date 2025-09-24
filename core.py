@@ -56,7 +56,7 @@ class Core:
                        for host in network.hosts()]
             for future in futures:
                 result = future.result()
-                if result:
+                if result and result not in Config.all_switches:
                     Config.all_switches.append(result)
 
     def read_file(self, dir: str, file: str):
@@ -191,6 +191,7 @@ class Core:
         message += "\t1- Switch Scan (Get list of your switches)\n"
         message += "\t2- Switches Link (Get uplink of your switches)\n"
         message += "\t3- IP Scan (Get list of your IP Address in your switch)\n"
+        message += "\t4- Switch Security Check (Check all switch)\n"
         message += "\te- Exit\nPlease insert option number: "
         return message
 
@@ -442,7 +443,7 @@ class Core:
             except Exception as e:
                 # print(f"- F-core, C-Core, D-case1_handler({ip}): {e}")
                 continue
-        
+
         Config.all_switches.clear()
         input("Press any key to exit ..")
 
@@ -533,9 +534,93 @@ class Core:
                     print(line)
                     counter += 1
                     time.sleep(0.001)
-                    
+
         cf.all_switches.clear()
         input("Press any key to exit ..")
+
+    def coreCaseFourHandler(self):
+        cf = Config()
+        self.scan_network()
+
+        user_config = self.coreUserConfigFormatChanger()
+        print("Security check code:")
+        for i, line in enumerate(user_config):
+            print(f"{i+1:<3}- {line}")
+
+        print("\nSwitch list with above code:")
+        all_ip = cf.all_switches
+        for i, ip in enumerate(all_ip):
+            connect = self.switch_connect(ip)
+            if connect is None:
+                continue
+
+            connect = self.switch_connect(ip)
+            run_config = connect.send_command("show running-config")
+            switch_config = self.coreConfigFormatChanger(run_config)
+
+            results = [f"{i}:N" for i, word in enumerate(
+                user_config, start=1) if word not in switch_config]
+            output = "  ".join(results)
+            print(f"{ip:<18} - {output}")
+            
+        input("Task finished! press Enter to continue ..")
+        os.system('cls')
+
+    def coreUserConfigFormatChanger(self):
+        cf = Config()
+        self.scan_network()
+        filename = f"{cf.data_dir}Config/Security-Check.txt"
+
+        lines = []
+        with open(filename, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+        output = []
+        parent = None
+        subs = []
+
+        for line in lines:
+            line = line.rstrip()
+            if not line:
+                continue
+            if line.startswith("    "):
+                subs.append(line.strip())
+            else:
+                if parent:
+                    joined = parent + "".join("___" + s for s in subs)
+                    output.append(joined)
+                parent = line.strip()
+                subs = []
+        if parent:
+            joined = parent + "".join("___" + s for s in subs)
+            output.append(joined)
+
+        output = [item for item in output if not set(item) <= {"!"}]
+        return output
+
+    def coreConfigFormatChanger(self, config):
+        output = []
+        parent = None
+        subs = []
+
+        for line in config.splitlines():
+            line = line.rstrip()
+            if not line:
+                continue
+            if line.startswith(" "):
+                subs.append(line.strip())
+            else:
+                if parent:
+                    joined = parent + "".join("___" + s for s in subs)
+                    output.append(joined)
+                parent = line.strip()
+                subs = []
+        if parent:
+            joined = parent + "".join("___" + s for s in subs)
+            output.append(joined)
+
+        output = [item for item in output if not set(item) <= {"!"}]
+        return output
 
 
 """
