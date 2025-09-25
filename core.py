@@ -407,8 +407,9 @@ class Core:
     def case1_handler(self):
         cf = Config()
         ad = App_DB()
-        dt = self.get_datetime()
+        super_putty = []
         self.scan_network()
+        dt = self.get_datetime()
         dt = self.get_datetime()
         counter = 1
         for ip in (Config.all_switches):
@@ -439,12 +440,22 @@ class Core:
                 # uptime_line = f"{counter:<3}- Hostname: {cf.hostname:<30} Uptime: {days:<3} d, {hours:<2} h, {minutes:<2} m"
                 with open(f"{cf.data_dir}Switches-List_{dt['date']}-{dt['time']}.txt", "a") as file:
                     file.write(f"{uptime_line} \n")
+
+                super_putty.append(
+                    f'<SessionData SessionId="{cf.hostname}" SessionName="{cf.hostname}" ImageKey="computer" Host="{ip}" Port="22" Proto="SSH" PuttySession="Default Settings" Username="" ExtraArgs="" SPSLFileName="" RemotePath="" LocalPath="" />')
                 print(uptime_line)
             except Exception as e:
                 # print(f"- F-core, C-Core, D-case1_handler({ip}): {e}")
                 continue
 
-        Config.all_switches.clear()
+        with open(f"{cf.data_dir}super-putty_{dt['date']}-{dt['time']}.xml", "a") as file:
+            file.write('<?xml version="1.0" encoding="utf-8"?> \n')
+            file.write(
+                '<ArrayOfSessionData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"> \n')
+            for switch in super_putty:
+                file.write(f"  {switch} \n")
+            file.write('</ArrayOfSessionData> \n')
+
         input("Press any key to exit ..")
 
     def get_ios_details(self, text):
@@ -562,7 +573,7 @@ class Core:
                 user_config, start=1) if word not in switch_config]
             output = "  ".join(results)
             print(f"{ip:<18} - {output}")
-            
+
         input("Task finished! press Enter to continue ..")
         os.system('cls')
 

@@ -31,6 +31,9 @@ while True:
                 cr.case2_handler()
 
             case "3":
+                cr.case3_handler()
+                
+            case "3":
                 cr.coreCaseFourHandler()
 
 print("Good bye ツ")
