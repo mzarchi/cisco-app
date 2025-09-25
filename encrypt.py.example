@@ -3,7 +3,7 @@ class Encryption:
         pass
 
     def encode(self, text):
-        pass
+        return text
 
     def decode(self, text):
-        pass
+        return text
