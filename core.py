@@ -580,7 +580,7 @@ class Core:
     def coreUserConfigFormatChanger(self):
         cf = Config()
         self.scan_network()
-        filename = f"{cf.data_dir}Config/Security-Check.txt"
+        filename = f"{cf.data_dir}Config/Switch-Configs.txt"
 
         lines = []
         with open(filename, "r", encoding="utf-8") as f:

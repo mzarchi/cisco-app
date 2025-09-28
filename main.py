@@ -32,12 +32,8 @@ while True:
 
             case "3":
                 cr.case3_handler()
-                
-            case "3":
+
+            case "4":
                 cr.coreCaseFourHandler()
 
-print("Good bye ツ")
-time.sleep(2)
-
 # pyinstaller --onefile --icon=icon/cisco-app.ico --name=Cisco-App main.py
-
