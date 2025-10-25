@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 import os
 import re
 import sys
+import csv
 import time
 import getpass
 import sqlite3
@@ -178,7 +179,8 @@ class Core:
 
     def show_banner(self):
         print(Config.banner)
-        message = f"Developer: github/mzarchi, version: {Config.version}\n"
+        message = f"Developer: github/mzarchi, Open-Source project\n"
+        message += "First-Commit: 2025/Aug/25, Last-Commit: 2025/Oct/06\n"
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
         message += "I always live in the depths of the Internet ❤️"
@@ -192,6 +194,7 @@ class Core:
         message += "\t2- Switches Link (Get uplink of your switches)\n"
         message += "\t3- IP Scan (Get list of your IP Address in your switch)\n"
         message += "\t4- Switch Security Check (Check all switch)\n"
+        message += "\tc- Get CSV from database\n"
         message += "\te- Exit\nPlease insert option number: "
         return message
 
@@ -717,8 +720,27 @@ class Core:
 
                     self.coreWriteFile(ports_configs, "\n")
                     print("")
+                input("Task finished! press Enter to continue ..")
+                os.system('cls')
             except Exception as e:
                 continue
+    
+    def coreCreateExportCsvFile(self):
+        db = App_DB()
+        ip_row = db.databaseGetIpData()
+        with open("ip_data_export.csv", "w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerow(["IP Address", "MAC Address", "Switch IP", "Port", "Insert Data", "Update Data"])
+
+            for row in ip_row:
+                imsp_value = row[1]
+                insert_date = row[2]
+                update_date = row[3]
+
+                parts = imsp_value.split("|")
+                writer.writerow(parts + [insert_date, update_date])
+
+        input("Task finished! press Enter to continue ..")
 
 
 """
@@ -1083,3 +1105,8 @@ class App_DB:
         except Exception as e:
             print(f"- F-core, C-App_DB, D-insert_ipdata: {e}")
             sys.exit(1)
+
+    def databaseGetIpData(self):
+        self.__open()
+        self.cursor.execute("SELECT * FROM ip_data")
+        return self.cursor.fetchall()
