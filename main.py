@@ -14,26 +14,27 @@ db.set_dict_ipsubnet_data()
 switch = 0
 while True:
     switch = input(cr.show_menu())
+    match switch:
+        case "e":
+            cr.ter_cls()
+            break
+        
+        case "c":
+            cr.coreCreateExportCsvFile()
 
-    if switch == "e":
-        cr.ter_cls()
-        break
+        case "0":
+            cr.app_settings_handler()
 
-    else:
-        match switch:
-            case "0":
-                cr.app_settings_handler()
+        case "1":
+            cr.case1_handler()
 
-            case "1":
-                cr.case1_handler()
+        case "2":
+            cr.case2_handler()
 
-            case "2":
-                cr.case2_handler()
+        case "3":
+            cr.case3_handler()
 
-            case "3":
-                cr.case3_handler()
-
-            case "4":
-                cr.coreCaseFourHandler()
+        case "4":
+            cr.coreCaseFourHandler()
 
 # pyinstaller --onefile --icon=icon/cisco-app.ico --name=Cisco-App main.py
