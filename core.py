@@ -556,8 +556,11 @@ class Core:
         self.ter_cls()
         message = "Please select one of the options below:\n"
         message += "\t1- Check Switch Configs\n"
-        message += "\t2- Check Access Ports Config\n"
-        message += "\t3- Check Trunk Ports Config\n"
+        message += "\t2- Set Switch Configs\n"
+        message += "\t3- Check Access Ports Config\n"
+        message += "\t4- Set Access Ports Config\n"
+        message += "\t5- Check Trunk Ports Config\n"
+        message += "\t6- Set Trunk Ports Config\n"
         message += "\te- Exit from Settings\nPlease insert option number: "
 
         while True:  # ID: ash_w1
@@ -572,12 +575,20 @@ class Core:
                     self.coreSwitchSecurityCheck()
                     break
 
-                case "2":
-                    self.coreCheckPortConfig(user_type="Access")
+                case "3":
+                    self.coreCheckPortConfig(user_type="Access", set_number=0)
                     break
 
-                case "3":
-                    self.coreCheckPortConfig(user_type="Trunk")
+                case "4":
+                    self.coreCheckPortConfig(user_type="Access", set_number=4)
+                    break
+
+                case "5":
+                    self.coreCheckPortConfig(user_type="Trunk", set_number=0)
+                    break
+
+                case "6":
+                    self.coreCheckPortConfig(user_type="Trunk", set_number=6)
                     break
 
     def coreSwitchSecurityCheck(self):
@@ -681,7 +692,7 @@ class Core:
         with open(dir_name, "a") as file:
             file.write(contents)
 
-    def coreCheckPortConfig(self, user_type: str):
+    def coreCheckPortConfig(self, user_type: str, set_number: int):
         cf = Config()
         dt = self.get_datetime()
         self.scan_network()
@@ -715,7 +726,9 @@ class Core:
                 model = self.find_model(version_data)
                 model_number = re.findall(r"\d{4}", model)
 
+                port_commands = {}
                 for key, value in interfaces_dict.items():
+                    port_commands[key] = []
                     port_type = "Warning!"
                     if "switchport access vlan" in value:
                         port_type = "Access"
@@ -728,12 +741,24 @@ class Core:
                         print(msg2, end="")
                         for ul in user_lines:
                             if ul not in value:
+                                port_commands[key].append(ul)
                                 msg3 = f"{str(user_lines.index(ul)+1).zfill(2)}:N "
                                 self.coreWriteFile(ports_configs, msg3)
                                 print(msg3, end="")
 
                         self.coreWriteFile(ports_configs, "\n")
                         print("")
+                if set_number != 0:
+                    accept_set = input("Add this commands to switch (Y/N) ? ")
+                    if accept_set == "Y" or accept_set == "y":
+                        for key, value in port_commands.items():
+                            commands = port_commands[key]
+                            if len(commands) > 0:
+                                port = key
+                                connect.send_config_set(
+                                    [f"interface {port}"] + commands)
+                                print(f"port {key}: Add {commands}")
+
             except Exception as e:
                 continue
 
