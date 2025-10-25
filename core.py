@@ -556,7 +556,8 @@ class Core:
         self.ter_cls()
         message = "Please select one of the options below:\n"
         message += "\t1- Check Switch Configs\n"
-        message += "\t2- Check Ports Config\n"
+        message += "\t2- Check Access Ports Config\n"
+        message += "\t3- Check Trunk Ports Config\n"
         message += "\te- Exit from Settings\nPlease insert option number: "
 
         while True:  # ID: ash_w1
@@ -572,7 +573,11 @@ class Core:
                     break
 
                 case "2":
-                    self.coreCheckPortConfig()
+                    self.coreCheckPortConfig(user_type="Access")
+                    break
+
+                case "3":
+                    self.coreCheckPortConfig(user_type="Trunk")
                     break
 
     def coreSwitchSecurityCheck(self):
@@ -676,16 +681,24 @@ class Core:
         with open(dir_name, "a") as file:
             file.write(contents)
 
-    def coreCheckPortConfig(self):
+    def coreCheckPortConfig(self, user_type: str):
         cf = Config()
         dt = self.get_datetime()
         self.scan_network()
-        ports_configs = f"{cf.data_dir}Ports-Configs_{dt['date']}-{dt['time']}.txt"
 
-        filename = f"{cf.data_dir}Config/Ports-Configs.txt"
         user_lines = []
-        with open(filename, "r", encoding="utf-8") as f:
-            user_lines = [line.strip() for line in f]
+        filename = ""
+        ports_configs = ""
+        if user_type == "Trunk":
+            ports_configs = f"{cf.data_dir}Config/Result/Ports-Trunk-Configs_{dt['date']}-{dt['time']}.txt"
+            filename = f"{cf.data_dir}Config/Ports-Trunk-Configs.txt"
+            with open(filename, "r", encoding="utf-8") as f:
+                user_lines = [line.strip() for line in f]
+        else:
+            ports_configs = f"{cf.data_dir}Config/Result/Ports-Access-Configs_{dt['date']}-{dt['time']}.txt"
+            filename = f"{cf.data_dir}Config/Ports-Access-Configs.txt"
+            with open(filename, "r", encoding="utf-8") as f:
+                user_lines = [line.strip() for line in f]
 
         print("Ports User Config:")
         print("\n".join(f"{str(i+1).zfill(2)}: {item}" for i,
@@ -709,28 +722,31 @@ class Core:
                     elif "switchport mode trunk" in value:
                         port_type = "Trunk"
 
-                    msg2 = f"- IP: {ip:<18} Switch-Model: {model_number[0]}     Port: {key:<30} Port-Type: {port_type:<10} Missings: "
-                    self.coreWriteFile(ports_configs, msg2)
-                    print(msg2, end="")
-                    for ul in user_lines:
-                        if ul not in value:
-                            msg3 = f"{str(user_lines.index(ul)+1).zfill(2)}:N "
-                            self.coreWriteFile(ports_configs, msg3)
-                            print(msg3, end="")
+                    if (user_type == "Trunk" and port_type == "Trunk") or (user_type == "Access" and port_type == "Access"):
+                        msg2 = f"- IP: {ip:<18} Switch-Model: {model_number[0]}     Port: {key:<30} Port-Type: {port_type:<10} Missings: "
+                        self.coreWriteFile(ports_configs, msg2)
+                        print(msg2, end="")
+                        for ul in user_lines:
+                            if ul not in value:
+                                msg3 = f"{str(user_lines.index(ul)+1).zfill(2)}:N "
+                                self.coreWriteFile(ports_configs, msg3)
+                                print(msg3, end="")
 
-                    self.coreWriteFile(ports_configs, "\n")
-                    print("")
-                input("Task finished! press Enter to continue ..")
-                os.system('cls')
+                        self.coreWriteFile(ports_configs, "\n")
+                        print("")
             except Exception as e:
                 continue
-    
+
+        input("Task finished! press Enter to continue ..")
+        os.system('cls')
+
     def coreCreateExportCsvFile(self):
         db = App_DB()
         ip_row = db.databaseGetIpData()
         with open("ip_data_export.csv", "w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
-            writer.writerow(["IP Address", "MAC Address", "Switch IP", "Port", "Insert Data", "Update Data"])
+            writer.writerow(["IP Address", "MAC Address",
+                            "Switch IP", "Port", "Insert Data", "Update Data"])
 
             for row in ip_row:
                 imsp_value = row[1]
