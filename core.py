@@ -758,6 +758,7 @@ class Core:
                                 connect.send_config_set(
                                     [f"interface {port}"] + commands)
                                 print(f"port {key}: Add {commands}")
+                        connect.save_config()
 
             except Exception as e:
                 continue
