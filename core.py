@@ -553,41 +553,81 @@ class Core:
         input("Press any key to exit ..")
 
     def coreCaseFourHandler(self):
-        self.ter_cls()
-        message = "Please select one of the options below:\n"
-        message += "\t1- Check Switch Configs\n"
-        message += "\t2- Set Switch Configs\n"
-        message += "\t3- Check Access Ports Config\n"
-        message += "\t4- Set Access Ports Config\n"
-        message += "\t5- Check Trunk Ports Config\n"
-        message += "\t6- Set Trunk Ports Config\n"
-        message += "\te- Exit from Settings\nPlease insert option number: "
+        """ Case Draft:
+            1: All
+            2: One
+            -----------
+            1: View
+            2: Set
+            3: Delete
+            -----------
+            1: Switch
+            2: Vlans
+            3: Ports
+              1: Access
+              2: Trunk
+            -----------
+        """
 
+        menu = """+ : Active commands, - : In develope ..
+Switches:
+  111: (viw) View the configuration of all switches +
+  211: (viw) View the configuration of a specific switch (by IP)
+  121: (set) Configure all switches
+  221: (set) Configuring a specific switch (by IP)
+  131: (del) Delete configuration on all switches
+  231: (del) Delete configuration of a specific switch (by IP)
+
+Vlans:
+  112: (viw) View the vlans configuration of all switches
+  212: (viw) View the vlans configuration of a specific switch (by IP)
+  122: (set) Configure all switches vlans
+  222: (set) Configuring a specific switch vlans (by IP)
+  132: (del) Delete vlans configuration on all switches
+  232: (del) Delete vlans configuration of a specific switch (by IP)
+
+Ports:
+  1131: (viw) View the access ports configuration of all switches +
+  1132: (viw) View the trunk ports configuration of all switches +
+  2131: (viw) View the access ports configuration of a specific switch (by IP)
+  2132: (viw) View the trunk ports configuration of a specific switch (by IP)
+  1231: (set) Configure all switches access ports +
+  2231: (set) Configure a specific switch access ports (by IP)
+  1232: (set) Configure all switches trunk ports +
+  2232: (set) Configure a specific switch trunk ports (by IP)
+  1331: (del) Delete access ports configuration on all switches
+  1332: (del) Delete access ports configuration of a specific switch (by IP)
+  2331: (del) Delete trunk ports configuration on all switches
+  2332: (del) Delete trunk ports configuration of a specific switch (by IP)
+
+Please insert option number: """
+
+        self.ter_cls()
         while True:  # ID: ash_w1
-            case_number = input(message)
+            case_number = input(menu)
 
             if case_number == "e":
                 self.ter_cls()
                 break
 
             match case_number:  # ID: ash_m1
-                case "1":
+                case "111":
                     self.coreSwitchSecurityCheck()
                     break
 
-                case "3":
+                case "1131":
                     self.coreCheckPortConfig(user_type="Access", set_number=0)
                     break
 
-                case "4":
+                case "1231":
                     self.coreCheckPortConfig(user_type="Access", set_number=4)
                     break
 
-                case "5":
+                case "1132":
                     self.coreCheckPortConfig(user_type="Trunk", set_number=0)
                     break
 
-                case "6":
+                case "1232":
                     self.coreCheckPortConfig(user_type="Trunk", set_number=6)
                     break
 
