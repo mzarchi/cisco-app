@@ -180,7 +180,7 @@ class Core:
     def show_banner(self):
         print(Config.banner)
         message = f"Developer: github/mzarchi, Open-Source project\n"
-        message += "First-Commit: 2025/Aug/25, Last-Commit: 2025/Oct/06\n"
+        message += "First-Commit: 2025/Aug/25, Last-Commit: 2025/NOV/08\n"
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
         message += "I always live in the depths of the Internet ❤️"
@@ -769,7 +769,7 @@ Please insert option number: """
         match data['action']:
             case "delete":
                 port_config_delete_file = f"{cf.data_dir}Config/Ports-Access-Delete.txt"
-                if 'type' == "trunk":
+                if data['type'] == "trunk":
                     port_config_delete_file = f"{cf.data_dir}Config/Ports-Trunk-Delete.txt"
 
                 with open(port_config_delete_file, "r", encoding="utf-8") as f:
@@ -782,7 +782,7 @@ Please insert option number: """
                         switch_lines = self.coreConfigFormatChanger(switch_config)
                         interfaces_dict = self.parse_interfaces(switch_lines)
                         for port, config in interfaces_dict.items():
-                            if "type" == "access" and "access" in config:
+                            if data['type'] == "access" and "access" in config:
                                 commands = [f"interface {port}"] + port_config_delete_file
                                 connect.send_config_set(commands)
                                 print(f"Switch-IP: {switch:<18} Mode: access, Port: {port}")
