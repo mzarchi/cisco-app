@@ -568,37 +568,36 @@ class Core:
               2: Trunk
             -----------
         """
-
-        menu = """+ : Active commands, - : In develope ..
+        menu = """- : Not Active
 Switches:
-  111: (viw) View the configuration of all switches +
-  211: (viw) View the configuration of a specific switch (by IP)
-  121: (set) Configure all switches
-  221: (set) Configuring a specific switch (by IP)
-  131: (del) Delete configuration on all switches
-  231: (del) Delete configuration of a specific switch (by IP)
+  111: (viw) View the configuration of all switches
+  211: (viw) View the configuration of a specific switch (by IP) -
+  121: (set) Configure all switches -
+  221: (set) Configuring a specific switch (by IP) -
+  131: (del) Delete configuration on all switches -
+  231: (del) Delete configuration of a specific switch (by IP) -
 
 Vlans:
-  112: (viw) View the vlans configuration of all switches
-  212: (viw) View the vlans configuration of a specific switch (by IP)
-  122: (set) Configure all switches vlans
-  222: (set) Configuring a specific switch vlans (by IP)
-  132: (del) Delete vlans configuration on all switches
-  232: (del) Delete vlans configuration of a specific switch (by IP)
+  112: (viw) View the vlans configuration of all switches -
+  212: (viw) View the vlans configuration of a specific switch (by IP) -
+  122: (set) Configure all switches vlans -
+  222: (set) Configuring a specific switch vlans (by IP) -
+  132: (del) Delete vlans configuration on all switches -
+  232: (del) Delete vlans configuration of a specific switch (by IP) -
 
 Ports:
-  1131: (viw) View the access ports configuration of all switches +
-  1132: (viw) View the trunk ports configuration of all switches +
-  2131: (viw) View the access ports configuration of a specific switch (by IP)
-  2132: (viw) View the trunk ports configuration of a specific switch (by IP)
-  1231: (set) Configure all switches access ports +
-  2231: (set) Configure a specific switch access ports (by IP)
-  1232: (set) Configure all switches trunk ports +
-  2232: (set) Configure a specific switch trunk ports (by IP)
+  1131: (viw) View the access ports configuration of all switches 
+  1132: (viw) View the trunk ports configuration of all switches 
+  2131: (viw) View the access ports configuration of a specific switch (by IP) -
+  2132: (viw) View the trunk ports configuration of a specific switch (by IP) -
+  1231: (set) Configure all switches access ports -
+  2231: (set) Configure a specific switch access ports (by IP) -
+  1232: (set) Configure all switches trunk ports -
+  2232: (set) Configure a specific switch trunk ports (by IP) -
   1331: (del) Delete access ports configuration on all switches
-  1332: (del) Delete access ports configuration of a specific switch (by IP)
-  2331: (del) Delete trunk ports configuration on all switches
-  2332: (del) Delete trunk ports configuration of a specific switch (by IP)
+  2331: (del) Delete access ports configuration of a specific switch (by IP) -
+  1332: (del) Delete trunk ports configuration on all switches
+  2332: (del) Delete trunk ports configuration of a specific switch (by IP) -
 
 Please insert option number: """
 
@@ -629,6 +628,26 @@ Please insert option number: """
 
                 case "1232":
                     self.coreCheckPortConfig(user_type="Trunk", set_number=6)
+                    break
+
+                case "1331":
+                    data = {
+                        'switch': 'all',     # 1
+                        'action': 'delete',  # 3
+                        'target': 'port',    # 3
+                        'type': 'access',    # 1
+                    }
+                    self.coreManageConfig(data)
+                    break
+                
+                case "1332":
+                    data = {
+                        'switch': 'all',     # 1
+                        'action': 'delete',  # 3
+                        'target': 'port',    # 3
+                        'type': 'trunk',     # 2
+                    }
+                    self.coreManageConfig(data)
                     break
 
     def coreSwitchSecurityCheck(self):
@@ -731,6 +750,51 @@ Please insert option number: """
     def coreWriteFile(self, dir_name, contents):
         with open(dir_name, "a") as file:
             file.write(contents)
+
+    def coreManageConfig(self, data):
+        match data['target']:
+            case "port":
+                self.coreManagePortConfig(data)
+
+    def coreManagePortConfig(self, data):
+        # Configuration list all or special switch for itered
+        cf = Config()
+        self.scan_network()
+        switch_list = []
+        if data['switch'] == "all":
+            switch_list = cf.all_switches
+        else:
+            switch_list.append[data['switch_ip']]
+
+        match data['action']:
+            case "delete":
+                port_config_delete_file = f"{cf.data_dir}Config/Ports-Access-Delete.txt"
+                if 'type' == "trunk":
+                    port_config_delete_file = f"{cf.data_dir}Config/Ports-Trunk-Delete.txt"
+
+                with open(port_config_delete_file, "r", encoding="utf-8") as f:
+                    port_config_delete_file = [f"no {line.strip()}" for line in f]
+
+                for switch in switch_list:
+                    try:
+                        connect = self.switch_connect(switch)
+                        switch_config = connect.send_command("show running-config")
+                        switch_lines = self.coreConfigFormatChanger(switch_config)
+                        interfaces_dict = self.parse_interfaces(switch_lines)
+                        for port, config in interfaces_dict.items():
+                            if "access" in config:
+                                commands = [f"interface {port}"] + port_config_delete_file
+                                connect.send_config_set(commands)
+                                connect.save_config()
+                                print(f"Switch-IP: {switch:<18}, Mode: access, Port: {port}")
+                            else:
+                                commands = [f"interface {port}"] + port_config_delete_file
+                                connect.send_config_set(commands)
+                                connect.save_config()
+                                print(f"Switch-IP: {switch:<18}, Mode: trunk, Port: {port}")
+                    except Exception as e:
+                        print(f"{switch}: {e}")
+                        continue
 
     def coreCheckPortConfig(self, user_type: str, set_number: int):
         cf = Config()
