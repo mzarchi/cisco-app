@@ -180,7 +180,7 @@ class Core:
     def show_banner(self):
         print(Config.banner)
         message = f"Developer: github/mzarchi, Open-Source project\n"
-        message += "First-Commit: 2025/Aug/25, Last-Commit: 2025/NOV/08\n"
+        message += "First-Commit: 2025/Aug/25, Last-Commit: 2025/Nov/08\n"
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
         message += "I always live in the depths of the Internet ❤️"
@@ -786,7 +786,8 @@ Please insert option number: """
                                 commands = [f"interface {port}"] + port_config_delete_file
                                 connect.send_config_set(commands)
                                 print(f"Switch-IP: {switch:<18} Mode: access, Port: {port}")
-                            else:
+                                
+                            elif data['type'] == "trunk" and "trunk" in config:
                                 commands = [f"interface {port}"] + port_config_delete_file
                                 connect.send_config_set(commands)
                                 print(f"Switch-IP: {switch:<18} Mode: trunk, Port: {port}")
