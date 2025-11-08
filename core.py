@@ -782,18 +782,16 @@ Please insert option number: """
                         switch_lines = self.coreConfigFormatChanger(switch_config)
                         interfaces_dict = self.parse_interfaces(switch_lines)
                         for port, config in interfaces_dict.items():
-                            if "access" in config:
+                            if "type" == "access" and "access" in config:
                                 commands = [f"interface {port}"] + port_config_delete_file
                                 connect.send_config_set(commands)
-                                connect.save_config()
-                                print(f"Switch-IP: {switch:<18}, Mode: access, Port: {port}")
+                                print(f"Switch-IP: {switch:<18} Mode: access, Port: {port}")
                             else:
                                 commands = [f"interface {port}"] + port_config_delete_file
                                 connect.send_config_set(commands)
-                                connect.save_config()
-                                print(f"Switch-IP: {switch:<18}, Mode: trunk, Port: {port}")
+                                print(f"Switch-IP: {switch:<18} Mode: trunk, Port: {port}")
+                        connect.save_config()
                     except Exception as e:
-                        print(f"{switch}: {e}")
                         continue
 
     def coreCheckPortConfig(self, user_type: str, set_number: int):
