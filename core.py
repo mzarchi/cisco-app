@@ -10,6 +10,7 @@ import re
 import sys
 import csv
 import time
+import json
 import getpass
 import sqlite3
 import platform
@@ -193,7 +194,7 @@ class Core:
         message += "\t1- Switch Scan (Get list of your switches)\n"
         message += "\t2- Switches Link (Get uplink of your switches)\n"
         message += "\t3- IP Scan (Get list of your IP Address in your switch)\n"
-        message += "\t4- Switch Security Check (Check all switch)\n"
+        message += "\t4- Switch Config Manager\n"
         message += "\tc- Get CSV from database\n"
         message += "\te- Exit\nPlease insert option number: "
         return message
@@ -569,35 +570,42 @@ class Core:
             -----------
         """
         menu = """- : Not Active
-Switches:
-  111: (viw) View the configuration of all switches
-  211: (viw) View the configuration of a specific switch (by IP) -
-  121: (set) Configure all switches -
-  221: (set) Configuring a specific switch (by IP) -
-  131: (del) Delete configuration on all switches -
-  231: (del) Delete configuration of a specific switch (by IP) -
+Switches-Config:
+   111: Action: View       Target: All switches
+   121: Action: Set        Target: All switches -
+   131: Action: Delete     Target: All switches -
+  
+   211: Action: View       Target: One switch (IP) -
+   221: Action: Set        Target: One switch (IP) -
+   231: Action: Delete     Target: One switch (IP) -
 
-Vlans:
-  112: (viw) View the vlans configuration of all switches -
-  212: (viw) View the vlans configuration of a specific switch (by IP) -
-  122: (set) Configure all switches vlans -
-  222: (set) Configuring a specific switch vlans (by IP) -
-  132: (del) Delete vlans configuration on all switches -
-  232: (del) Delete vlans configuration of a specific switch (by IP) -
+Vlans-Config:
+   112: Action: View       Target: All switches
+   122: Action: Set        Target: All switches -
+   132: Action: Delete     Target: All switches -
+  
+   212: Action: View       Target: One switch (IP) -
+   222: Action: Set        Target: One switch (IP) -
+   232: Action: Delete     Target: One switch (IP) -
 
-Ports:
-  1131: (viw) View the access ports configuration of all switches 
-  1132: (viw) View the trunk ports configuration of all switches 
-  2131: (viw) View the access ports configuration of a specific switch (by IP) -
-  2132: (viw) View the trunk ports configuration of a specific switch (by IP) -
-  1231: (set) Configure all switches access ports -
-  2231: (set) Configure a specific switch access ports (by IP) -
-  1232: (set) Configure all switches trunk ports -
-  2232: (set) Configure a specific switch trunk ports (by IP) -
-  1331: (del) Delete access ports configuration on all switches
-  2331: (del) Delete access ports configuration of a specific switch (by IP) -
-  1332: (del) Delete trunk ports configuration on all switches
-  2332: (del) Delete trunk ports configuration of a specific switch (by IP) -
+Ports-Config:
+  1131: Action: View   (Access Port)    Target: All switches 
+  1231: Action: Config (Access Port)    Target: All switches    -
+  1331: Action: Delete (Access Port)    Target: All switches
+  
+  2131: Action: View   (Access Port)    Target: One switch (IP) -
+  2231: Action: Config (Access Port)    Target: One switch (IP) -
+  2331: Action: Delete (Access Port)    Target: One switch (IP) -
+  
+  1132: Action: View   (Trunk Port)     Target: All switches
+  1232: Action: Config (Trunk Port)     Target: All switches    -
+  1332: Action: Delete (Trunk Port)     Target: All switches
+  
+  2132: Action: View   (Trunk Port)     Target: One switch (IP) -
+  2232: Action: Config (Trunk Port)     Target: One switch (IP) -
+  2332: Action: Delete (Trunk Port)     Target: One switch (IP) -
+  
+json: Set json config 
 
 Please insert option number: """
 
@@ -610,6 +618,16 @@ Please insert option number: """
                 break
 
             match case_number:  # ID: ash_m1
+                case "json":
+                    data = {
+                        'switch': 'all',
+                        'action': 'json',
+                        'target': 'port',
+                        'type': 'access',
+                    }
+                    self.coreManagePortConfig(data)
+                    break
+
                 case "111":
                     self.coreSwitchSecurityCheck()
                     break
@@ -639,7 +657,7 @@ Please insert option number: """
                     }
                     self.coreManageConfig(data)
                     break
-                
+
                 case "1332":
                     data = {
                         'switch': 'all',     # 1
@@ -773,27 +791,76 @@ Please insert option number: """
                     port_config_delete_file = f"{cf.data_dir}Config/Ports-Trunk-Delete.txt"
 
                 with open(port_config_delete_file, "r", encoding="utf-8") as f:
-                    port_config_delete_file = [f"no {line.strip()}" for line in f]
+                    port_config_delete_file = [
+                        f"no {line.strip()}" for line in f]
 
                 for switch in switch_list:
                     try:
                         connect = self.switch_connect(switch)
-                        switch_config = connect.send_command("show running-config")
-                        switch_lines = self.coreConfigFormatChanger(switch_config)
+                        switch_config = connect.send_command(
+                            "show running-config")
+                        switch_lines = self.coreConfigFormatChanger(
+                            switch_config)
                         interfaces_dict = self.parse_interfaces(switch_lines)
                         for port, config in interfaces_dict.items():
                             if data['type'] == "access" and "access" in config:
-                                commands = [f"interface {port}"] + port_config_delete_file
+                                commands = [
+                                    f"interface {port}"] + port_config_delete_file
                                 connect.send_config_set(commands)
-                                print(f"Switch-IP: {switch:<18} Mode: access, Port: {port}")
-                                
+                                print(
+                                    f"Switch-IP: {switch:<18} Mode: access, Port: {port}")
+
                             elif data['type'] == "trunk" and "trunk" in config:
-                                commands = [f"interface {port}"] + port_config_delete_file
+                                commands = [
+                                    f"interface {port}"] + port_config_delete_file
                                 connect.send_config_set(commands)
-                                print(f"Switch-IP: {switch:<18} Mode: trunk, Port: {port}")
+                                print(
+                                    f"Switch-IP: {switch:<18} Mode: trunk, Port: {port}")
                         connect.save_config()
                     except Exception as e:
                         continue
+
+            case "json":
+                json_config_file = f"{cf.data_dir}Config/Free-Config.json"
+                with open(json_config_file, "r", encoding="utf-8") as file:
+                    json_data = json.load(file)
+                switch_list = []
+                if json_data['switch'] == "all":
+                    switch_list = cf.all_switches
+                else:
+                    switch_list.append(json_data['switch_ip'])
+
+                
+                for ip in switch_list:
+                    change_config = False
+                    try:
+                        connect = self.switch_connect(ip)
+                        switch_config = connect.send_command("show running-config")
+                        switch_lines = self.coreConfigFormatChanger(switch_config)
+                    except Exception as e:
+                        continue
+
+                    if json_data['target'] == "port":
+                        interfaces_dict = self.parse_interfaces(switch_lines)
+                        match json_data['type']:
+                            case "all":
+                                for key, value in interfaces_dict.items():
+                                    try:
+                                        if json_data['value'] not in value:
+                                            commands = [f"interface {key}"]
+                                            for item in json_data['commands']:
+                                                commands.append(item)
+                                                connect.send_config_set(commands)
+                                                print(f"switch: {ip:<18} description: ********, Interface {key}")
+                                                change_config = True
+                                    except Exception as e:
+                                        print(f"{key}: {e}")
+                                        continue
+                    if not change_config:
+                        print(f"Switch: {ip:<18} not changed!")
+                    
+                    if json_data['save']:
+                        connect.save_config()
 
     def coreCheckPortConfig(self, user_type: str, set_number: int):
         cf = Config()
