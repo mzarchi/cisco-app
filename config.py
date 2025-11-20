@@ -7,6 +7,7 @@ class Config:
     counter = 0
     hostname = None
     all_switches = []
+    COMMON_PORTS = [21, 22, 23, 67, 68, 80, 443]
     db_dir = ""
     root_dir = sys.argv[0].replace("main.py", "")
     data_dir = ""

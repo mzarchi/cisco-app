@@ -11,6 +11,7 @@ import sys
 import csv
 import time
 import json
+import socket
 import getpass
 import sqlite3
 import platform
@@ -191,15 +192,65 @@ class Core:
         self.ter_cls()
         message = "Please select one of the options below:\n"
         message += "\t0- App Settings (Edit all app settings)\n"
-        message += "\t1- Switch Scan (Get list of your switches)\n"
-        message += "\t2- Switches Link (Get uplink of your switches)\n"
-        message += "\t3- IP Scan (Get list of your IP Address in your switch)\n"
-        message += "\t4- Switch Config Manager\n"
+        message += "\t1- IP Scanner + Subnet (Get all ip by subnet)\n"
+        message += "\t2- Switch Scan (Get list of your switches)\n"
+        message += "\t3- Switches Link (Get uplink of your switches)\n"
+        message += "\t4- Swtiches IPs (Get list of your IP Address in your switch)\n"
+        message += "\t5- Switch Config Manager\n"
         message += "\tc- Get CSV from database\n"
         message += "\te- Exit\nPlease insert option number: "
         return message
 
-    def case2_handler(self):
+    def ping_host(self, ip):
+        cmd = ["ping", "-n", "1", "-w", "300", ip]
+        result = subprocess.run(
+            cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return result.returncode == 0
+
+
+    def check_ports(self, ip):
+        cf = Config()
+        open_ports = []
+        for port in cf.COMMON_PORTS:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(0.3)
+                if s.connect_ex((ip, port)) == 0:
+                    open_ports.append(port)
+                s.close()
+            except:
+                pass
+        return open_ports
+    
+    def case_ip_scanner(self, base_ip_subnet):
+        cf = Config()
+        dt = self.get_datetime()
+        result_text = ""
+        network = ipaddress.ip_network(f"{base_ip_subnet}", strict=False)
+        print(f"Check {cf.COMMON_PORTS} on {base_ip_subnet}")
+        for ip in network.hosts():
+            ip = str(ip)
+            alive = self.ping_host(ip)
+
+            if alive:
+                message = ""
+                ports = self.check_ports(ip)
+                if ports:
+                    message = f"[+] {ip:<15} alive | open ports: {ports}"
+                    print(message)
+                else:
+                    message = f"[+] {ip:<15} alive |"
+                    print(message)
+                result_text += f"{message}\n"
+            else:
+                print(f"[-] {ip:<15} down")
+
+        with open(f"{cf.data_dir}IP-Scanner_{dt['date']}-{dt['time']}.txt", "a") as file:
+            file.write(result_text)
+        
+        input("Press any key to back ..")
+
+    def case_switch_link(self):
         cf = Config()
         db = App_DB()
         self.scan_network()
@@ -408,12 +459,11 @@ class Core:
 
                     ab.set_dict_admin_data()
 
-    def case1_handler(self):
+    def case_switch_scan(self):
         cf = Config()
         ad = App_DB()
         super_putty = []
         self.scan_network()
-        dt = self.get_datetime()
         dt = self.get_datetime()
         counter = 1
         for ip in (Config.all_switches):
@@ -505,7 +555,7 @@ class Core:
         except Exception as e:
             print(f"- F-core, C-Core, D-switch_connect: {e}")
 
-    def case3_handler(self):
+    def case_switch_ips(self):
         cf = Config()
         db = App_DB()
         counter = 1
@@ -553,7 +603,7 @@ class Core:
         cf.all_switches.clear()
         input("Press any key to exit ..")
 
-    def coreCaseFourHandler(self):
+    def case_config_manager(self):
         """ Case Draft:
             1: All
             2: One
@@ -830,13 +880,14 @@ Please insert option number: """
                 else:
                     switch_list.append(json_data['switch_ip'])
 
-                
                 for ip in switch_list:
                     change_config = False
                     try:
                         connect = self.switch_connect(ip)
-                        switch_config = connect.send_command("show running-config")
-                        switch_lines = self.coreConfigFormatChanger(switch_config)
+                        switch_config = connect.send_command(
+                            "show running-config")
+                        switch_lines = self.coreConfigFormatChanger(
+                            switch_config)
                     except Exception as e:
                         continue
 
@@ -850,15 +901,17 @@ Please insert option number: """
                                             commands = [f"interface {key}"]
                                             for item in json_data['commands']:
                                                 commands.append(item)
-                                                connect.send_config_set(commands)
-                                                print(f"switch: {ip:<18} description: ********, Interface {key}")
+                                                connect.send_config_set(
+                                                    commands)
+                                                print(
+                                                    f"switch: {ip:<18} description: ********, Interface {key}")
                                                 change_config = True
                                     except Exception as e:
                                         print(f"{key}: {e}")
                                         continue
                     if not change_config:
                         print(f"Switch: {ip:<18} not changed!")
-                    
+
                     if json_data['save']:
                         connect.save_config()
 
