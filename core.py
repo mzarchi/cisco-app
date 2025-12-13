@@ -12,6 +12,7 @@ import csv
 import time
 import json
 import socket
+import ctypes
 import getpass
 import sqlite3
 import platform
@@ -251,7 +252,8 @@ class Core:
                 result_text += f"{message}\n"
             else:
                 print(f"[-] {ip:<15} down")
-
+        self.log(
+            f"core[]:core{{}}:case_ip_scanner():CreateFile:IP-Scanner.txt")
         with open(f"{cf.scanner_dir}IP-Scanner_{dt['date']}-{dt['time']}.txt", "a") as file:
             file.write(result_text)
 
@@ -260,11 +262,13 @@ class Core:
     def case_switch_link(self):
         cf = Config()
         db = App_DB()
+        self.log("core[]:core{}:case_switch_link():scan_network()")
         self.scan_network()
         result = ""
         switches = cf.all_switches
 
         # Put there for use two lines
+        self.log("core[]:core{}:case_switch_link():get_datetime()")
         dt = self.get_datetime()
 
         for i, ip in enumerate(switches):
@@ -280,6 +284,8 @@ class Core:
                         'secret': cf.auth_dict[auth_index]['secret'],
                     }
 
+                    self.log(
+                        f"core[]:core{{}}:case_switch_link():for:while:ConnectHandler({ip})")
                     connect = ConnectHandler(**cisco_switch)
                     connect.enable()
                     break
@@ -293,23 +299,40 @@ class Core:
 
             if connect != None:
                 try:
+                    self.log(
+                        "core[]:core{}:case_switch_link():for:send_command(show version)")
                     version_data = connect.send_command("show version")
+                    self.log(
+                        "core[]:core{}:case_switch_link():for:find_hostname()")
                     hostname = self.find_hostname(version_data)
+
+                    self.log(
+                        "core[]:core{}:case_switch_link():for:CreateFile:version.txt")
                     with open(f"{cf.version_dir}{hostname}-version_{dt['date']}-{dt['time']}.txt", "a") as file:
                         file.write(version_data)
+                    self.log(
+                        "core[]:core{}:case_switch_link():for:send_command(show cdp neighbors detail)")
                     content = connect.send_command("show cdp neighbors detail")
+                    self.log(
+                        "core[]:core{}:case_switch_link():for:manage_content()")
                     sw_text = self.manage_content(content)
+                    self.log(
+                        "core[]:core{}:case_switch_link():for:CreateFile:cdp.txt")
                     with open(f"{cf.switchcdp_dir}{hostname}-CDP_{dt['date']}-{dt['time']}.txt", "a") as file:
                         file.write(content)
 
                     # def write_result
                     wr_result = ""
                     for i in range(0, len(sw_text)):
+                        self.log(
+                            "core[]:core{}:case_switch_link():for:for:switch_data()")
                         sw_data = self.switch_data(sw_text[i])
                         part_one = f"{self.__set_number()} - {Config.hostname+":":<30} {sw_data["ports"][0]:<25}"
                         part_two = f"{sw_data["device"]+":":<30} {sw_data["ports"][1]:<25}"
                         link = f"{Config.hostname}-{sw_data["ports"][0]}|{sw_data["device"]}-{sw_data["ports"][1]}"
                         msl_dt = f"{dt['date']}-{dt['time']}"
+                        self.log(
+                            "core[]:core{}:case_switch_link():for:for:App_DB{}:manage_switch_link()")
                         update = db.manage_switch_link(link, msl_dt)
 
                         part_three = "Insert (New!)"
@@ -325,6 +348,7 @@ class Core:
                     print(f"- Error in {ip}: {e}")
                     continue
 
+        self.log("core[]:core{}:case_switch_link():for:CreateFile:Switch-Links.txt")
         with open(f"{cf.switchlinks_dir}Switch-Links_{dt['date']}-{dt['time']}.txt", "a") as file:
             file.write(result)
 
@@ -374,7 +398,8 @@ class Core:
                     c1_message += "\t3- Remove SSH Data\n"
                     c1_message += "\te- Exit\nPlease insert option number: "
                     while True:
-                        self.log("core[]:core{}:app_settings_handler():c1_case_number:input()")
+                        self.log(
+                            "core[]:core{}:app_settings_handler():c1_case_number:input()")
                         c1_case_number = input(c1_message)
                         if c1_case_number == "e":
                             self.ter_cls()
@@ -382,7 +407,8 @@ class Core:
 
                         match c1_case_number:
                             case "1":
-                                self.log("core[]:core{}:app_settings_handler():c1_case_number-1")
+                                self.log(
+                                    "core[]:core{}:app_settings_handler():c1_case_number-1")
                                 self.ter_cls()
                                 ipsubnet_data = {}
                                 ip_subnet = self.get_current_text(
@@ -394,8 +420,9 @@ class Core:
                                     "ip_subnet": ip_subnet,
                                     "domain": domain
                                 })
-                                
-                                self.log("core[]:core{}:app_settings_handler():c1_case_number-1:App_DB{}:set_ipsubnet_data()")
+
+                                self.log(
+                                    "core[]:core{}:app_settings_handler():c1_case_number-1:App_DB{}:set_ipsubnet_data()")
                                 ab.set_ipsubnet_data(ipsubnet_data)
                                 input(
                                     "Data Added to Database!\nPress enter to back ..")
@@ -403,9 +430,11 @@ class Core:
                                 continue
 
                             case "2":
-                                self.log("core[]:core{}:app_settings_handler():c1_case_number-2")
+                                self.log(
+                                    "core[]:core{}:app_settings_handler():c1_case_number-2")
                                 self.ter_cls()
-                                self.log("core[]:core{}:app_settings_handler():App_DB{}:set_dict_ipsubnet_data()")
+                                self.log(
+                                    "core[]:core{}:app_settings_handler():App_DB{}:set_dict_ipsubnet_data()")
                                 ip_subnet = ab.set_dict_ipsubnet_data()
 
                                 for key, value in ip_subnet.items():
@@ -416,16 +445,19 @@ class Core:
                                 continue
 
                             case "3":
-                                self.log("core[]:core{}:app_settings_handler():c1_case_number-3")
+                                self.log(
+                                    "core[]:core{}:app_settings_handler():c1_case_number-3")
                                 self.ter_cls()
                                 ip_subnet = self.get_current_text(
                                     "Please enter ip and subnet (ex: 192.168.1.0/24): ")
-                                self.log("core[]:core{}:app_settings_handler():App_DB{}:del_ipsubnet_data()")
+                                self.log(
+                                    "core[]:core{}:app_settings_handler():App_DB{}:del_ipsubnet_data()")
                                 ab.del_ipsubnet_data(ip_subnet)
 
                                 input("\nPress any key to return ...")
                                 continue
-                        self.log("core[]:core{}:app_settings_handler():App_DB{}:set_dict_ipsubnet_data()")
+                        self.log(
+                            "core[]:core{}:app_settings_handler():App_DB{}:set_dict_ipsubnet_data()")
                         ab.set_dict_ipsubnet_data()
 
                 case "2":
@@ -437,14 +469,16 @@ class Core:
                     c2_message += "\t3- Remove Admin\n"
                     c2_message += "\te- Exit\nPlease insert option number: "
                     while True:  # ID: ash_w2
-                        self.log("core[]:core{}:app_settings_handler():case_number-2:c2_case_number:imput()")
+                        self.log(
+                            "core[]:core{}:app_settings_handler():case_number-2:c2_case_number:imput()")
                         c2_case_number = input(c2_message)
                         if c2_case_number == "e":
                             break
 
                         match c2_case_number:  # ID: ash_m2
                             case "1":
-                                self.log("core[]:core{}:app_settings_handler():case_number-2:c2_case_number-1")
+                                self.log(
+                                    "core[]:core{}:app_settings_handler():case_number-2:c2_case_number-1")
                                 self.ter_cls()
                                 user_data = {}
                                 username = self.get_current_text(
@@ -461,7 +495,8 @@ class Core:
                                     "secret": secret,
                                     "tag": tag
                                 })
-                                self.log("core[]:core{}:app_settings_handler():case_number-2:c2_case_number-1:App_DB{}:set_admin_data()")
+                                self.log(
+                                    "core[]:core{}:app_settings_handler():case_number-2:c2_case_number-1:App_DB{}:set_admin_data()")
                                 ab.set_admin_data(user_data)
 
                                 input(
@@ -470,9 +505,11 @@ class Core:
                                 continue
 
                             case "2":
-                                self.log("core[]:core{}:app_settings_handler():case_number-2:c2_case_number-2")
+                                self.log(
+                                    "core[]:core{}:app_settings_handler():case_number-2:c2_case_number-2")
                                 self.ter_cls()
-                                self.log("core[]:core{}:app_settings_handler():case_number-2:c2_case_number-2:App_DB{}:get_admin_data()")
+                                self.log(
+                                    "core[]:core{}:app_settings_handler():case_number-2:c2_case_number-2:App_DB{}:get_admin_data()")
                                 rows = ab.get_admin_data()
                                 for i, row in enumerate(rows):
                                     print(
@@ -482,31 +519,45 @@ class Core:
                                 continue
 
                             case "3":
-                                self.log("core[]:core{}:app_settings_handler():case_number-2:c2_case_number-3")
+                                self.log(
+                                    "core[]:core{}:app_settings_handler():case_number-2:c2_case_number-3")
                                 self.ter_cls()
                                 c3_username = input(
                                     "Input username for remove: ")
-                                self.log("core[]:core{}:app_settings_handler():case_number-2:c2_case_number-3:App_DB{}:del_admin_data()")
+                                self.log(
+                                    "core[]:core{}:app_settings_handler():case_number-2:c2_case_number-3:App_DB{}:del_admin_data()")
                                 ab.del_admin_data(en.encode(c3_username))
 
-                    self.log("core[]:core{}:app_settings_handler():case_number-2:c2_case_number-3:App_DB{}:set_dict_admin_data()")
+                    self.log(
+                        "core[]:core{}:app_settings_handler():case_number-2:c2_case_number-3:App_DB{}:set_dict_admin_data()")
                     ab.set_dict_admin_data()
 
     def case_switch_scan(self):
         cf = Config()
         ad = App_DB()
         super_putty = []
+        self.log("core[]:core{}:case_switch_scan():scan_network()")
         self.scan_network()
+        self.log("core[]:core{}:case_switch_scan():get_datetime()")
         dt = self.get_datetime()
         counter = 1
         for ip in (Config.all_switches):
             try:
+                self.log(
+                    f"core[]:core{{}}:case_switch_scan():for:switch_connect({ip})")
                 cnt = self.switch_connect(ip)
+                self.log(
+                    "core[]:core{}:case_switch_scan():for:send_command(show version)")
                 version_data = cnt.send_command("show version")
+                self.log("core[]:core{}:case_switch_scan():for:find_hostname()")
                 self.find_hostname(version_data)
+                self.log("core[]:core{}:case_switch_scan():for:find_model()")
                 model = self.find_model(version_data)
+                self.log("core[]:core{}:case_switch_scan():for:find_mac()")
                 sw_mac = self.find_mac(version_data)
+                self.log("core[]:core{}:case_switch_scan():for:get_uptime()")
                 days, hours, minutes = self.get_uptime(version_data)
+                self.log("core[]:core{}:case_switch_scan():for:get_ios_details()")
                 ports, ios_version, ios_type = self.get_ios_details(
                     version_data)
                 data = {
@@ -520,11 +571,15 @@ class Core:
                     'insert_date': f"{dt['date']} {dt['time']}",
                     'update_date': f"{dt['date']} {dt['time']}"
                 }
+                self.log(
+                    f"core[]:core{{}}:case_switch_scan():for:manage_switch_data({ip})")
                 update = ad.manage_switch_data(data)
                 update_msg = "update" if update else "insert (New!)"
                 uptime_line = f"{counter:<3}- Hostname: {cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<3} d, {hours:<2} h, {minutes:<2} m, real-ports: {ports:<3} IOS-version: {ios_version:<15} IOS-type: {ios_type:<25} Action: {update_msg}"
                 counter += 1
                 # uptime_line = f"{counter:<3}- Hostname: {cf.hostname:<30} Uptime: {days:<3} d, {hours:<2} h, {minutes:<2} m"
+                self.log(
+                    f"core[]:core{{}}:case_switch_scan():for:CreateFile:Switches-List.txt")
                 with open(f"{cf.switchlist_dir}Switches-List_{dt['date']}-{dt['time']}.txt", "a") as file:
                     file.write(f"{uptime_line} \n")
 
@@ -535,6 +590,8 @@ class Core:
                 # print(f"- F-core, C-Core, D-case1_handler({ip}): {e}")
                 continue
 
+        self.log(
+            f"core[]:core{{}}:case_switch_scan():CreateFile:super-putty.xml")
         with open(f"{cf.superputty_dir}super-putty_{dt['date']}-{dt['time']}.xml", "a") as file:
             file.write('<?xml version="1.0" encoding="utf-8"?> \n')
             file.write(
@@ -594,17 +651,28 @@ class Core:
         counter = 1
         self.scan_network()
         dt = self.get_datetime()
+        ip_text_file = ""
         for hip in cf.all_switches:
             connect = self.switch_connect(hip)
             if connect is None:
+                self.log(
+                    f"core[]:core{{}}:case_switch_ips():for:Can'tConnectTo{hip}")
                 continue
+            self.log(f"core[]:core{{}}:case_switch_ips():for:ConnectTo{hip}")
 
+            self.log(
+                "core[]:core{}:case_switch_ips():for:send_command(show version)")
             version_data = connect.send_command("show version")
+            self.log("core[]:core{}:case_switch_ips():for:find_model(version_data)")
             model = self.find_model(version_data)
             model_number = re.findall(r"\d{4}", model)
 
+            self.log(
+                "core[]:core{}:case_switch_ips():for:send_command(show ip device tracking all)")
             sidta = connect.send_command("show ip device tracking all")
             if "%" in sidta:
+                self.log(
+                    "core[]:core{}:case_switch_ips():for:if:send_command(show ip device tracking all)")
                 sidta = connect.send_command("show device-tracking database")
 
             pattern = re.compile(
@@ -621,18 +689,22 @@ class Core:
                 if match:
                     ip, mac, port = match.groups()
                     imsp = f"{ip}|{mac}|{hip}|{port}"
+                    self.log(
+                        "core[]:core{}:case_switch_ips():for:for:if:App_DB{}.insert_ipdata(imsp, date_time)")
                     new_imsp = db.insert_ipdata(imsp, date_time)
                     imsp_sec = "Update"
                     if new_imsp:
                         imsp_sec = "Insert (New!)"
 
                     line = f"{counter:<4}- IP: {ip:<18} MAC: {mac:<18} Switch: {hip:<18} Port: ({model_number[0]}) {port:<25} Action: {imsp_sec}"
-                    with open(f"{cf.ips_dir}IP-List_{dt['date']}-{dt['time']}.txt", "a") as file:
-                        file.write(f"{line} \n")
+                    ip_text_file += f"{line}\n"
                     print(line)
                     counter += 1
                     time.sleep(0.001)
 
+        self.log("core[]:core{}:case_switch_ips():for:for:CreateFile:IP-List.txt")
+        with open(f"{cf.ips_dir}IP-List_{dt['date']}-{dt['time']}.txt", "a") as file:
+            file.write(ip_text_file)
         cf.all_switches.clear()
         input("Press any key to exit ..")
 

@@ -6,6 +6,7 @@ import getpass
 class Config:
     counter = 0
     hostname = None
+    user = ""
     all_switches = []
     COMMON_PORTS = [21, 22, 23, 67, 68, 80, 443]
     db_dir = ""
@@ -44,6 +45,7 @@ class Config:
 
     def create_db_dir(self):
         user = getpass.getuser()
+        self.user = user
         db_dirs = f"C:/Users/{user}/AppData/Local/ca_data/"
         os.makedirs(db_dirs, exist_ok=True)
         self.db_dir = f"{db_dirs}app_data.db"

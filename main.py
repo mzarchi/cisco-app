@@ -7,19 +7,19 @@ cf = Config()
 db = App_DB()
 cr = Core()
 
-cr.log("main[]: Start app!", nl=True)
-cr.log("core[]:Core{}:show_banner()")
+cr.log("main[]:main():Start-app", nl=True)
+cr.log("main[]:core[]:Core{}:show_banner()")
 cr.show_banner()
 time.sleep(2)
-cr.log("core[]:App_DB{}:set_dict_admin_data()")
+cr.log("main[]:core[]:App_DB{}:set_dict_admin_data()")
 db.set_dict_admin_data()
-cr.log("core[]:App_DB{}:set_dict_ipsubnet_data()")
+cr.log("main[]:core[]:App_DB{}:set_dict_ipsubnet_data()")
 db.set_dict_ipsubnet_data()
 switch = 0
 while True:
     cr.log("main[]:while:switch:show_menu()")
     switch = input(cr.show_menu())
-    cr.log("main[]:while:switch:input({switch})")
+    cr.log("main[]:while:switch:input(switch)")
     match switch:
         case "0":
             # App Settings (Edit all app settings)
