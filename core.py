@@ -36,6 +36,7 @@ import subprocess
 
 
 class Core:
+    cf = Config()
     def __init__(self):
         pass
 
@@ -205,6 +206,7 @@ class Core:
         message += "\t3- Switches Link (Get uplink of your switches)\n"
         message += "\t4- Swtiches IPs (Get list of your IP Address in your switch)\n"
         message += "\t5- Switch Config Manager\n"
+        message += "\t6- Get Backup from Config/Interfaces/version/CDP details of switches\n"
         message += "\tc- Get CSV from database\n"
         message += "\te- Exit\nPlease insert option number: "
         return message
@@ -1066,6 +1068,91 @@ Please insert option number: """
                 writer.writerow(parts + [insert_date, update_date])
 
         input("Task finished! press Enter to continue ..")
+        
+    def coreGetSwitchesBackup(self):
+        self.log("core[]:core{}:coreGetSwitchesBackup():scan_network()")
+        self.scan_network()
+        switches = self.cf.all_switches
+
+        # Put there for use two lines
+        self.log("core[]:core{}:coreGetSwitchesBackup():get_datetime()")
+        dt = self.get_datetime()
+        counter = 1
+        for ip in switches:
+            connect = None
+            auth_index = 0
+            while True:
+                try:
+                    cisco_switch = {
+                        'device_type': 'cisco_ios',
+                        'host': ip,
+                        'username': self.cf.auth_dict[auth_index]['username'],
+                        'password': self.cf.auth_dict[auth_index]['password'],
+                        'secret': self.cf.auth_dict[auth_index]['secret'],
+                    }
+
+                    self.log(f"core[]:core{{}}:coreGetSwitchesBackup():for:while:ConnectHandler({ip})")
+                    connect = ConnectHandler(**cisco_switch)
+                    connect.enable()
+                    break
+
+                except Exception as e:
+                    if auth_index < len(self.cf.auth_dict):
+                        auth_index += 1
+                        continue
+                    else:
+                        break
+
+            if connect != None:
+                try:
+                    print()
+                    self.log("core[]:core{}:coreGetSwitchesBackup():for:while:if:send_command(show version)")
+                    version_data = connect.send_command("show version")
+                    hostname = self.find_hostname(version_data)
+                    print(f"{counter:<3} - {hostname:<30} create ", end="")
+                    self.coreWriteFile(f"{self.cf.version_dir}{hostname}-version_{dt['date']}-{dt['time']}.txt", version_data)
+                    print("version ", end="")
+                    
+                    self.log("core[]:core{}:coreGetSwitchesBackup():for:while:if:send_command(show running-config)")
+                    running_config_data = connect.send_command("show running-config")
+                    self.coreWriteFile(f"{self.cf.switchconfig_dir}{hostname}-config_{dt['date']}-{dt['time']}.txt", running_config_data)
+                    print("config ", end="")
+                    
+                    
+                    self.log("core[]:core{}:coreGetSwitchesBackup():for:while:if:send_command(show interfaces status)")
+                    interface_status_data = connect.send_command("show interfaces status")
+                    self.coreWriteFile(f"{self.cf.interface_dir}{hostname}-interface_{dt['date']}-{dt['time']}.txt", interface_status_data)
+                    print("interfaces ", end="")
+                    
+                    self.log("core[]:core{}:coreGetSwitchesBackup():for:while:if:send_command(show vlan brief)")
+                    vlan_brief_data = connect.send_command("show vlan brief")
+                    self.coreWriteFile(f"{self.cf.vlans_dir}{hostname}-vlan_{dt['date']}-{dt['time']}.txt", vlan_brief_data)
+                    print("vlans ", end="")
+                    
+                    ip_data = ""
+                    try:
+                        self.log("core[]:core{}:coreGetSwitchesBackup():for:while:if:send_command(show ip device tracking all)")
+                        ip_data = connect.send_command("show ip device tracking all")
+                        
+                    except Exception as e:
+                        self.log("core[]:core{}:coreGetSwitchesBackup():for:while:if:send_command(show device-tracking database)")
+                        ip_data = connect.send_command("show device-tracking database")
+                        
+                    self.coreWriteFile(f"{self.cf.ips_dir}{hostname}-ip_{dt['date']}-{dt['time']}.txt", ip_data)
+                    print("vlans ", end="")
+                    
+                    backup_msg = running_config_data + "\n\n\n"
+                    backup_msg += version_data + "\n\n\n"
+                    backup_msg += interface_status_data + "\n\n\n"
+                    backup_msg += vlan_brief_data + "\n\n\n"
+                    backup_msg += ip_data + "\n\n\n"
+                    self.coreWriteFile(f"{self.cf.backup_dir}{hostname}-backup_{dt['date']}-{dt['time']}.txt", backup_msg)
+                    print("backup", end="")
+                    self.log("core[]:core{}:coreGetSwitchesBackup():for:while:if:Files Created!")
+                    counter += 1
+                except Exception as e:
+                        self.log(f"core[]:core{{}}:coreGetSwitchesBackup():for:while:if:Exception:{e}")
+        
 
 
 """

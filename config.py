@@ -50,7 +50,7 @@ class Config:
         os.makedirs(db_dirs, exist_ok=True)
         self.db_dir = f"{db_dirs}app_data.db"
 
-        mk = [None] * 12
+        mk = [None] * 14
         mk[0] = self.data_dir = f"C:/Users/{user}/Desktop/CA-Data/"
         mk[1] = self.ips_dir = f"{self.data_dir}/SwitchesIPs/"
         mk[2] = self.config_dir = f"{self.data_dir}/Configs"
@@ -63,6 +63,8 @@ class Config:
         mk[9] = self.switchlinks_dir = f"{self.data_dir}/SwitchLinks/"
         mk[10] = self.switchconfig_dir = f"{self.data_dir}/SwitchesConfigs/"
         mk[11] = self.systemlog_dir = f"{self.data_dir}/SystemLog/"
+        mk[12] = self.backup_dir = f"{self.data_dir}/Backup/"
+        mk[13] = self.vlans_dir = f"{self.data_dir}/SwitchVlans/"
 
         for i in mk:
             os.makedirs(i, exist_ok=True)

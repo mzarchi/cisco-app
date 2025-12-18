@@ -23,37 +23,42 @@ while True:
     match switch:
         case "0":
             # App Settings (Edit all app settings)
-            cr.log("main[]:while:switch:case-0:app_settings_handler()")
+            cr.log("main[]:while:switch:case-0:core{}:core[]:app_settings_handler()")
             cr.app_settings_handler()
 
         case "1":
             ip_range = input("Insert your ip: ")
-            cr.log("main[]:while:switch:case-1:case_ip_scanner()")
+            cr.log("main[]:while:switch:case-1:core{}:core[]:case_ip_scanner()")
             cr.case_ip_scanner(ip_range)
 
         case "2":
-            # Switch Scan (Get list of your switches) c1
-            cr.log("main[]:while:switch:case-2:case_switch_scan()")
+            # Switch Scan (Get list of your switches)
+            cr.log("main[]:while:switch:case-2:core{}:core[]:case_switch_scan()")
             cr.case_switch_scan()
 
         case "3":
-            # Switches Link (Get uplink of your switches) c2
-            cr.log("main[]:while:switch:case-3:case_switch_link()")
+            # Switches Link (Get uplink of your switches)
+            cr.log("main[]:while:switch:case-3:core{}:core[]:case_switch_link()")
             cr.case_switch_link()
 
         case "4":
-            # Swtiches IPs (Get list of your IP Address in your switch) c3
-            cr.log("main[]:while:switch:case-4:case_switch_ips()")
+            # Swtiches IPs (Get list of your IP Address in your switch)
+            cr.log("main[]:while:switch:case-4:core{}:core[]:case_switch_ips()")
             cr.case_switch_ips()
 
         case "5":
-            # Switch Config Manager c4
-            cr.log("main[]:while:switch:case-5:case_config_manager()")
+            # Switch Config Manager
+            cr.log("main[]:while:switch:case-5:core{}:core[]:case_config_manager()")
             cr.case_config_manager()
+            
+        case "6":
+            # Case Backup
+            cr.log("main[]:while:switch:case-6:core{}:core[]:coreGetSwitchesBackup()")
+            cr.coreGetSwitchesBackup()
 
         case "c":
             # Get CSV from database
-            cr.log("main[]:while:switch:case-c:coreCreateExportCsvFile()")
+            cr.log("main[]:while:switch:case-c:core{}:core[]:coreCreateExportCsvFile()")
             cr.coreCreateExportCsvFile()
 
         case "e":
