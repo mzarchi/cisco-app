@@ -38,6 +38,10 @@ import subprocess
 class Core:
     cf = Config()
     def __init__(self):
+        dt = self.get_datetime()
+        for row, i in enumerate(self.cf.mk):
+            if row > 6:
+                os.makedirs(f"{i}{dt['backup']}/", exist_ok=True)
         pass
 
     def log(self, message, nl=False):
@@ -191,7 +195,7 @@ class Core:
     def show_banner(self):
         print(Config.banner)
         message = f"Developer: github/mzarchi, Open-Source project\n"
-        message += "First-Commit: 2025/Aug/25, Last-Commit: 2025/Dec/13\n"
+        message += "First-Commit: 2025/Aug/25, version: 2512\n"
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
         message += "I always live in the depths of the Internet ❤️"
@@ -362,6 +366,7 @@ class Core:
         result.update({"date": now.strftime("%Y%m%d")})
         result.update({"time": now.strftime("%H%M%S")})
         result.update({"log": now.strftime("%H:%M:%S")})
+        result.update({"backup": now.strftime("%Y-%m-%d")})
         return result
 
     def ter_cls(self):
@@ -1116,24 +1121,29 @@ Please insert option number: """
                     version_data = connect.send_command("show version")
                     hostname = self.find_hostname(version_data)
                     print(f"{counter:<3} - {hostname:<30} create ", end="")
-                    self.coreWriteFile(f"{self.cf.version_dir}{hostname}-version_{dt['date']}-{dt['time']}.txt", version_data)
-                    print("version ", end="")
+                    self.coreWriteFile(f"{self.cf.version_dir}{dt['backup']}/{hostname}-version_{dt['date']}-{dt['time']}.txt", version_data)
+                    print("version, ", end="")
                     
                     self.log("core[]:core{}:coreGetSwitchesBackup():for:while:if:send_command(show running-config)")
                     running_config_data = connect.send_command("show running-config")
-                    self.coreWriteFile(f"{self.cf.switchconfig_dir}{hostname}-config_{dt['date']}-{dt['time']}.txt", running_config_data)
-                    print("config ", end="")
+                    self.coreWriteFile(f"{self.cf.switchconfig_dir}{dt['backup']}/{hostname}-config_{dt['date']}-{dt['time']}.txt", running_config_data)
+                    print("config, ", end="")
                     
                     
                     self.log("core[]:core{}:coreGetSwitchesBackup():for:while:if:send_command(show interfaces status)")
                     interface_status_data = connect.send_command("show interfaces status")
-                    self.coreWriteFile(f"{self.cf.interface_dir}{hostname}-interface_{dt['date']}-{dt['time']}.txt", interface_status_data)
-                    print("interfaces ", end="")
+                    self.coreWriteFile(f"{self.cf.interface_dir}{dt['backup']}/{hostname}-interface_{dt['date']}-{dt['time']}.txt", interface_status_data)
+                    print("interfaces, ", end="")
                     
                     self.log("core[]:core{}:coreGetSwitchesBackup():for:while:if:send_command(show vlan brief)")
                     vlan_brief_data = connect.send_command("show vlan brief")
-                    self.coreWriteFile(f"{self.cf.vlans_dir}{hostname}-vlan_{dt['date']}-{dt['time']}.txt", vlan_brief_data)
-                    print("vlans ", end="")
+                    self.coreWriteFile(f"{self.cf.vlans_dir}{dt['backup']}/{hostname}-vlan_{dt['date']}-{dt['time']}.txt", vlan_brief_data)
+                    print("vlans, ", end="")
+                    
+                    self.log("core[]:core{}:coreGetSwitchesBackup():for:while:if:send_command(show cdp neighbors detail)")
+                    show_cdp_data = connect.send_command("show cdp neighbors detail")
+                    self.coreWriteFile(f"{self.cf.switchcdp_dir}{dt['backup']}/{hostname}-cdp_{dt['date']}-{dt['time']}.txt", show_cdp_data)
+                    print("cdp, ", end="")
                     
                     ip_data = ""
                     try:
@@ -1144,21 +1154,24 @@ Please insert option number: """
                         self.log("core[]:core{}:coreGetSwitchesBackup():for:while:if:send_command(show device-tracking database)")
                         ip_data = connect.send_command("show device-tracking database")
                         
-                    self.coreWriteFile(f"{self.cf.ips_dir}{hostname}-ip_{dt['date']}-{dt['time']}.txt", ip_data)
-                    print("vlans ", end="")
+                    self.coreWriteFile(f"{self.cf.ips_dir}{dt['backup']}/{hostname}-ip_{dt['date']}-{dt['time']}.txt", ip_data)
+                    print("vlans, ", end="")
                     
                     backup_msg = running_config_data + "\n\n\n"
                     backup_msg += version_data + "\n\n\n"
                     backup_msg += interface_status_data + "\n\n\n"
                     backup_msg += vlan_brief_data + "\n\n\n"
+                    backup_msg += show_cdp_data + "\n\n\n"
                     backup_msg += ip_data + "\n\n\n"
-                    self.coreWriteFile(f"{self.cf.backup_dir}{hostname}-backup_{dt['date']}-{dt['time']}.txt", backup_msg)
-                    print("backup", end="")
+                    self.coreWriteFile(f"{self.cf.backup_dir}{dt['backup']}/{hostname}-backup_{dt['date']}-{dt['time']}.txt", backup_msg)
+                    print("backup file successfully!", end="")
                     self.log("core[]:core{}:coreGetSwitchesBackup():for:while:if:Files Created!")
                     counter += 1
                 except Exception as e:
-                        self.log(f"core[]:core{{}}:coreGetSwitchesBackup():for:while:if:Exception:{e}")
+                    self.log(f"core[]:core{{}}:coreGetSwitchesBackup():for:while:if:Exception:{e}")
         
+        input("Task finished! press Enter to continue ..")
+        os.system('cls')
 
 
 """

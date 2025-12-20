@@ -66,4 +66,9 @@ while True:
             cr.ter_cls()
             break
 
-# pyinstaller --onefile --icon=icon/cisco-app.ico --name=Cisco-App main.py
+'''
+Compile Command: pyinstaller --onefile --icon=icon/cisco-app.ico --name=Cisco-App main.py
+version Guide:
+    fix-bug: 0.0.+
+    add-ftr: 0.+.0
+'''
