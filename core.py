@@ -237,27 +237,33 @@ class Core:
         result_text = ""
         network = ipaddress.ip_network(f"{base_ip_subnet}", strict=False)
         print(f"Check {cf.COMMON_PORTS} on {base_ip_subnet}")
+        message = ""
         for ip in network.hosts():
-            ip = str(ip)
-            alive = self.ping_host(ip)
-
-            if alive:
-                message = ""
-                ports = self.check_ports(ip)
-                if ports:
-                    message = f"[+] {ip:<15} alive | open ports: {ports}"
-                    print(message)
+            try:
+                ip = str(ip)
+                alive = self.ping_host(ip)
+                if alive:
+                    message = ""
+                    ports = self.check_ports(ip)
+                    if ports:
+                        message = f"[+] {ip:<15} alive | open ports: {ports}"
+                        print(message)
+                    else:
+                        message = f"[+] {ip:<15} alive |"
+                        print(message)
+                    result_text += f"{message}\n"
                 else:
-                    message = f"[+] {ip:<15} alive |"
-                    print(message)
-                result_text += f"{message}\n"
-            else:
-                print(f"[-] {ip:<15} down")
-        self.log(f"core[]:core{{}}:case_ip_scanner():CreateFile:IP-Scanner.txt")
+                    print(f"[-] {ip:<15} down")
+            except KeyboardInterrupt:
+                message += "\nTask Killed!\n"
+                self.log("core[]:core{}:case_ip_scanner():for:Task-Killed!")
+                break
+            
+        self.log("core[]:core{}:case_ip_scanner():CreateFile:IP-Scanner.txt")
         with open(f"{cf.scanner_dir}IP-Scanner_{dt['date']}-{dt['time']}.txt", "a") as file:
             file.write(result_text)
 
-        input("Press any key to back ..")
+        input(message + "Press any key to back ..")
 
     def case_switch_link(self):
         cf = Config()
