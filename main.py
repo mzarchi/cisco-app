@@ -67,8 +67,6 @@ while True:
             break
 
 '''
-Compile Command: pyinstaller --onefile --icon=icon/cisco-app.ico --name=Cisco-App main.py
-version Guide:
-    fix-bug: 0.0.+
-    add-ftr: 0.+.0
+pyinstaller --onefile --icon=icon/cisco-app.ico --name=Cisco-App main.py
+git rev-list --count HEAD
 '''
