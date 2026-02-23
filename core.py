@@ -207,8 +207,9 @@ class Core:
         message += "\t2- Switch Scan (Get list of your switches)\n"
         message += "\t3- Switches Link (Get uplink of your switches)\n"
         message += "\t4- Swtiches IPs (Get list of your IP Address in your switch)\n"
-        message += "\t5- Switch Config Manager\n"
-        message += "\t6- Get Backup from Config/Interfaces/version/CDP details of switches\n"
+        message += "\t5- Get DNS name by IP\n"
+        message += "\t6- Switch Config Manager\n"
+        message += "\t7- Get Backup from Config/Interfaces/version/CDP details of switches\n"
         message += "\tc- Get CSV from database\n"
         message += "\te- Exit\nPlease insert option number: "
         return message
@@ -605,8 +606,18 @@ class Core:
 
         except Exception as e:
             print(f"- F-core, C-Core, D-switch_connect: {e}")
+    
+    def get_dns_name(self, ip):
+        result = "None"
+        try:
+            name = socket.gethostbyaddr(ip)
+            result = name[0].replace(self.cf.domain, "")
+        except Exception as e:
+            self.log(f"core[]:core{{}}:get_dns_name():Error:{e}")
 
-    def case_switch_ips(self):
+        return result
+    
+    def case_switch_ips(self, dns_mode):
         db = App_DB()
         counter = 1
         connect_failed = 0
@@ -636,10 +647,10 @@ class Core:
             self.log(f"core[]:core{{}}:case_switch_ips():for:Connectivity({hip})")
             connect_failed = 0
             self.log("core[]:core{}:case_switch_ips():for:send_command(show version)")
-            version_data = connect.send_command("show version")
+            #version_data = connect.send_command("show version")
             self.log("core[]:core{}:case_switch_ips():for:find_model(version_data)")
-            model = self.find_model(version_data)
-            model_number = re.findall(r"\d{4}", model)
+            #model = self.find_model(version_data)
+            #model_number = re.findall(r"\d{4}", model)
 
             self.log("core[]:core{}:case_switch_ips():for:send_command(show ip device tracking all)")
             sidta = connect.send_command("show ip device tracking all")
@@ -660,23 +671,43 @@ class Core:
                 match = pattern.search(line)
                 if match:
                     ip, mac, port = match.groups()
-                    imsp = f"{ip}|{mac}|{hip}|{port}"
-                    self.log("core[]:core{}:case_switch_ips():for:for:if:App_DB{}.insert_ipdata(imsp, date_time)")
-                    new_imsp = db.insert_ipdata(imsp, date_time)
-                    imsp_sec = "Update"
-                    if new_imsp:
-                        imsp_sec = "Insert (New!)"
+                    if dns_mode:
+                        dns_name = self.get_dns_name(ip)
+                        if dns_name is not "None":
+                            imsp = f"{dns_name}|{hip}|{port}"
+                            #imsp = f"{ip}|{dns_name}|{mac}|{hip}|{port}"
+                            self.log("core[]:core{}:case_switch_ips():for:for:if:if:if:App_DB{}.insert_dnsdata(imsp, date_time)")
+                            new_imsp = db.insert_dnsdata(imsp, date_time)
+                            imsp_sec = "Update"
+                            if new_imsp:
+                                imsp_sec = "Insert (New!)"
 
-                    line = f"{counter:<4}- IP: {ip:<18} MAC: {mac:<18} Switch: {hip:<18} Port: ({model_number[0]}) {port:<25} Action: {imsp_sec}"
-                    ip_text_file += f"{line}\n"
-                    print(line)
-                    counter += 1
-                    time.sleep(0.001)
+                            line = f"{counter:<4}- Switch: {hip:<18} Port: {port:<25} PC-Name: {dns_name:<30} Action: {imsp_sec}"
+                            ip_text_file += f"{line}\n"
+                            print(line)
+                            counter += 1
+                            
+                    else:
+                        imsp = f"{ip}|{mac}|{hip}|{port}"
+                        self.log("core[]:core{}:case_switch_ips():for:for:if:if:else:App_DB{}.insert_ipdata(imsp, date_time)")
+                        new_imsp = db.insert_ipdata(imsp, date_time)
+                        imsp_sec = "Update"
+                        if new_imsp:
+                            imsp_sec = "Insert (New!)"
+
+                        line = f"{counter:<4}- IP: {ip:<18} MAC: {mac:<18} Switch: {hip:<18} Port: {port:<25} Action: {imsp_sec}"
+                        ip_text_file += f"{line}\n"
+                        print(line)
+                        counter += 1
 
         if connect_failed < 3:
             self.log("core[]:core{}:case_switch_ips():for:for:CreateFile:IP-List.txt")
-            with open(f"{self.cf.ips_dir}IP-List_{dt['date']}-{dt['time']}.txt", "a") as file:
-                file.write(ip_text_file)
+            if dns_mode:
+                with open(f"{self.cf.recordDNS_dir}IP-DNS_{dt['date']}-{dt['time']}.txt", "a") as file:
+                    file.write(ip_text_file)
+            else:
+                with open(f"{self.cf.ips_dir}IP-List_{dt['date']}-{dt['time']}.txt", "a") as file:
+                    file.write(ip_text_file)
         self.cf.all_switches.clear()
         input("Press any key to exit ..")
 
@@ -732,8 +763,6 @@ Ports-Config:
   2232: Action: Config (Trunk Port)     Target: One switch (IP)
   2332: Action: Delete (Trunk Port)     Target: One switch (IP) -
   
-json: Set json config 
-
 Please insert option number: """
 
         self.ter_cls()
@@ -948,9 +977,10 @@ Please insert option number: """
 
     def coreManagePortConfig(self, data):
         self.log(f"core[]:core{{}}:coreManagePortConfig({data})")
-        self.scan_network()
         switch_list = []
         if data['switch'] == "all":
+            self.scan_network()
+            
             switch_list = self.cf.all_switches
         else:
             switch_list.append(data['switch'])
@@ -975,7 +1005,7 @@ Please insert option number: """
                     try:
                         connect = self.switch_connect(switch)
                         switch_config = connect.send_command("show running-config")
-                        switch_lines = self.coreConfigFormatChanger(switch_config)
+                        switch_lines = self.coreConfigFormatChanger(switch_config) 
                         interfaces_dict = self.parse_interfaces(switch_lines)
                         connect.config_mode()
                         for port in interfaces_dict.keys():
@@ -984,6 +1014,8 @@ Please insert option number: """
                                 result_str = ""
                                 for uckey in user_config_dict.keys():
                                     if user_config_dict[uckey] not in interfaces_dict[port]:
+                                        self.log(user_config_dict[uckey])
+                                        self.log(interfaces_dict[port])
                                         run_result = connect.send_command_timing(user_config_dict[uckey])
                                         if "% Invalid" not in run_result:
                                             cid = uckey + 1
@@ -991,7 +1023,7 @@ Please insert option number: """
                                                 result_str += f" [{cid}]"
                                             else:
                                                 result_str += f" [0{cid}]"
-                                print(f"Switch-IP: {switch:<18} Mode: Access, Port: {port:<30}, Applied: {result_str}")
+                                print(f"Switch-IP: {switch:<18} Mode: Access, Port: {port:<30} Applied: {result_str}")
                             elif data['type'] == "trunk" and "trunk" in interfaces_dict[port]:
                                 connect.send_command_timing(f"interface {port}")
                                 result_str = ""
@@ -1355,6 +1387,14 @@ class App_DB:
                                     insert_date TEXT NOT NULL,
                                     update_date TEXT NOT NULL)
                                 """)
+            
+            self.cursor.execute("""
+                                CREATE TABLE IF NOT EXISTS dns_data (
+                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    imsp TEXT NOT NULL,
+                                    insert_date TEXT NOT NULL,
+                                    update_date TEXT NOT NULL)
+                                """)
             self.__close()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-create_tables: {e}")
@@ -1610,6 +1650,34 @@ class App_DB:
                     ))
             else:
                 self.cursor.execute("UPDATE ip_data SET update_date = ? WHERE imsp = ?", (date_time, imsp))
+
+            self.__close()
+            return new_imsp
+        except Exception as e:
+            print(f"- F-core, C-App_DB, D-insert_ipdata: {e}")
+            sys.exit(1)
+            
+    def insert_dnsdata(self, imsp, date_time):
+        try:
+            new_imsp = False
+            self.__open()
+            self.cursor.execute("SELECT * FROM dns_data WHERE imsp = ?", (imsp,))
+            row = self.cursor.fetchone()
+
+            if not row:
+                new_imsp = True
+                self.cursor.execute(
+                    """INSERT INTO dns_data (
+                            imsp,
+                            insert_date,
+                            update_date
+                        ) VALUES (?, ?, ?)""", (
+                        imsp,
+                        date_time,
+                        date_time,
+                    ))
+            else:
+                self.cursor.execute("UPDATE dns_data SET update_date = ? WHERE imsp = ?", (date_time, imsp))
 
             self.__close()
             return new_imsp

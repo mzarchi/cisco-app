@@ -5,3 +5,5 @@ __*
 .venv
 build/
 pilot*
+local*
+*.spec

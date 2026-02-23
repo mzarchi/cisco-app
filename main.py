@@ -44,16 +44,21 @@ while True:
         case "4":
             # Swtiches IPs (Get list of your IP Address in your switch)
             cr.log("main[]:while:switch:case-4:core{}:core[]:case_switch_ips()")
-            cr.case_switch_ips()
-
+            cr.case_switch_ips(dns_mode=False)
+            
         case "5":
+            # Get DNS name by IP
+            cr.log("main[]:while:switch:case-5:core{}:core[]:case_switch_ips(dns_mode)")
+            cr.case_switch_ips(dns_mode=True)
+
+        case "6":
             # Switch Config Manager
-            cr.log("main[]:while:switch:case-5:core{}:core[]:case_config_manager()")
+            cr.log("main[]:while:switch:case-6:core{}:core[]:case_config_manager()")
             cr.case_config_manager()
             
-        case "6":
+        case "7":
             # Case Backup
-            cr.log("main[]:while:switch:case-6:core{}:core[]:coreGetSwitchesBackup()")
+            cr.log("main[]:while:switch:case-7:core{}:core[]:coreGetSwitchesBackup()")
             cr.coreGetSwitchesBackup()
 
         case "c":
