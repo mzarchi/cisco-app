@@ -193,7 +193,7 @@ class Core:
     def show_banner(self):
         print(Config.banner)
         message = f"Developer: github/mzarchi, Open-Source project\n"
-        message += "First-Commit: G0-2508, version: G86-2602\n" # G{CommitsCounts}-{YYMM}
+        message += "First-Commit: G0-2508, version: G90-2603\n" # G{CommitsCounts}-{YYMM}
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
         message += "I always live in the depths of the Internet ❤️"
@@ -210,6 +210,8 @@ class Core:
         message += "\t5- Get DNS name by IP\n"
         message += "\t6- Switch Config Manager\n"
         message += "\t7- Get Backup from Config/Interfaces/version/CDP details of switches\n"
+        
+        message += "\ts- Search in Switches IPs database\n"
         message += "\tc- Get CSV from database\n"
         message += "\te- Exit\nPlease insert option number: "
         return message
@@ -673,7 +675,7 @@ class Core:
                     ip, mac, port = match.groups()
                     if dns_mode:
                         dns_name = self.get_dns_name(ip)
-                        if dns_name is not "None":
+                        if dns_name != "None":
                             imsp = f"{dns_name}|{hip}|{port}"
                             #imsp = f"{ip}|{dns_name}|{mac}|{hip}|{port}"
                             self.log("core[]:core{}:case_switch_ips():for:for:if:if:if:App_DB{}.insert_dnsdata(imsp, date_time)")
@@ -1290,6 +1292,35 @@ Please insert option number: """
 
         input("Task finished! press Enter to continue ..")
         os.system('cls')
+        
+    def coreSearchSwitchesIPsDatabase(self):
+        db = App_DB()
+        self.log("core[]:core{}:coreGetSwitchesBackup():scan_network()")
+        while True:
+            result = "\n"
+            key = input("Insert a IP, MAC, Switch or 'e' for exit: ")
+            try:
+                if key == "e":
+                    break
+                else:
+                    self.log(f"core[]:core{{}}:coreSearchSwitchesIPsDatabase():key:{key}")
+                    line_data = db.getDataFromIpDataTable(key)
+                    self.log(f"core[]:core{{}}:coreSearchSwitchesIPsDatabase():line_data:{line_data}:type:{type(line_data)}")
+                    for ld in line_data:
+                        self.log(f"core[]:core{{}}:coreSearchSwitchesIPsDatabase():ld:{ld}:type:{type(ld)}")
+                        list_data = ld[1].split("|")
+                        self.log(f"core[]:core{{}}:coreSearchSwitchesIPsDatabase():list_data:{list_data}")
+                        result += f"IP Address: {list_data[0]}\n"
+                        result += f"MAC Address: {list_data[1]}\n"
+                        result += f"Switch IP: {list_data[2]}\n"
+                        result += f"Port Number: {list_data[3]}\n"
+                        result += f"Insert Date: {ld[2]}\n"
+                        result += f"Update Date: {ld[3]}\n\n"
+                    print(result)
+            except Exception as e:
+                self.log(f"core[]:core{{}}:coreSearchSwitchesIPsDatabase():Exeption:{e}")
+                continue
+        
 
 
 """
@@ -1688,4 +1719,10 @@ class App_DB:
     def databaseGetIpData(self):
         self.__open()
         self.cursor.execute("SELECT * FROM ip_data")
+        return self.cursor.fetchall()
+    
+    def getDataFromIpDataTable(self, mini):
+        self.__open()
+        query = "SELECT * FROM ip_data WHERE imsp LIKE ? ORDER BY update_date DESC"
+        self.cursor.execute(query, ('%' + mini + '%',))
         return self.cursor.fetchall()
