@@ -61,6 +61,11 @@ while True:
             cr.log("main[]:while:switch:case-7:core{}:core[]:coreGetSwitchesBackup()")
             cr.coreGetSwitchesBackup()
 
+        case "s":
+            # Search in Switches IPs database
+            cr.log("main[]:while:switch:case-c:core{}:core[]:coreSearchSwitchesIPsDatabase()")
+            cr.coreSearchSwitchesIPsDatabase()
+            
         case "c":
             # Get CSV from database
             cr.log("main[]:while:switch:case-c:core{}:core[]:coreCreateExportCsvFile()")
