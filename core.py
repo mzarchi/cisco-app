@@ -1,5 +1,5 @@
 from config import Config
-from datetime import datetime
+from datetime import datetime, timedelta
 from encrypt import Encryption
 from netmiko import ConnectHandler
 from netmiko.exceptions import NetmikoTimeoutException
@@ -9,7 +9,6 @@ import os
 import re
 import sys
 import csv
-import time
 import json
 import socket
 import getpass
@@ -364,7 +363,14 @@ class Core:
         result.update({"time": now.strftime("%H%M%S")})
         result.update({"log": now.strftime("%H:%M:%S")})
         result.update({"backup": now.strftime("%Y-%m-%d")})
+        result.update({"dati": now.strftime("%Y-%m-%d %H%M%S")})
+        result.update({"unix": str(int(now.timestamp()))})
         return result
+    
+    def cudt(self, unixtime):
+        dt_utc = datetime.fromtimestamp(unixtime)
+        #dt_iran = dt_utc + timedelta(hours=3, minutes=30)
+        return dt_utc.strftime('%Y-%m-%d %H:%M:%S')
 
     def ter_cls(self):
         os.system('cls')
@@ -632,6 +638,7 @@ class Core:
             switch_ips.append(user_special_ip)
             
         dt = self.get_datetime()
+        self.log(f"core[]:core{{}}:case_switch_ips():{dt}")
         ip_text_file = ""
         for hip in switch_ips:
             connect = self.switch_connect(hip)
@@ -668,7 +675,7 @@ class Core:
                 r"(\S*\/\S*)"
             )
 
-            date_time = f"{dt['date']} {dt['time']}"
+            date_time = f"{dt['unix']}"
             for line in sidta.splitlines():
                 match = pattern.search(line)
                 if match:
@@ -679,7 +686,7 @@ class Core:
                             imsp = f"{dns_name}|{hip}|{port}"
                             #imsp = f"{ip}|{dns_name}|{mac}|{hip}|{port}"
                             self.log("core[]:core{}:case_switch_ips():for:for:if:if:if:App_DB{}.insert_dnsdata(imsp, date_time)")
-                            new_imsp = db.insert_dnsdata(imsp, date_time)
+                            new_imsp = db.insert_dnsdata(imsp, date_time, dt['dati'])
                             imsp_sec = "Update"
                             if new_imsp:
                                 imsp_sec = "Insert (New!)"
@@ -691,8 +698,8 @@ class Core:
                             
                     else:
                         imsp = f"{ip}|{mac}|{hip}|{port}"
-                        self.log("core[]:core{}:case_switch_ips():for:for:if:if:else:App_DB{}.insert_ipdata(imsp, date_time)")
-                        new_imsp = db.insert_ipdata(imsp, date_time)
+                        self.log(f"core[]:core{{}}:case_switch_ips():for:for:if:if:else:App_DB{{}}.insert_ipdata({imsp}, {date_time}, {dt['dati']})")
+                        new_imsp = db.insert_ipdata(imsp, date_time, dt['dati'])
                         imsp_sec = "Update"
                         if new_imsp:
                             imsp_sec = "Insert (New!)"
@@ -1295,27 +1302,36 @@ Please insert option number: """
         
     def coreSearchSwitchesIPsDatabase(self):
         db = App_DB()
+        dt = self.get_datetime()
         self.log("core[]:core{}:coreGetSwitchesBackup():scan_network()")
         while True:
             result = "\n"
+            counter = 1
             key = input("Insert a IP, MAC, Switch or 'e' for exit: ")
             try:
                 if key == "e":
                     break
                 else:
-                    self.log(f"core[]:core{{}}:coreSearchSwitchesIPsDatabase():key:{key}")
+                    self.log(f"core[]:core{{}}:coreSearchSwitchesIPsDatabase():key:{type(key)}")
                     line_data = db.getDataFromIpDataTable(key)
-                    self.log(f"core[]:core{{}}:coreSearchSwitchesIPsDatabase():line_data:{line_data}:type:{type(line_data)}")
+                    self.log(f"core[]:core{{}}:coreSearchSwitchesIPsDatabase():line_data:{type(line_data)}")
                     for ld in line_data:
-                        self.log(f"core[]:core{{}}:coreSearchSwitchesIPsDatabase():ld:{ld}:type:{type(ld)}")
+                        self.log(f"core[]:core{{}}:coreSearchSwitchesIPsDatabase():ld:{type(ld)}")
                         list_data = ld[1].split("|")
-                        self.log(f"core[]:core{{}}:coreSearchSwitchesIPsDatabase():list_data:{list_data}")
+                        ip_age = int((int(ld[3]) - int(ld[2])) / 86400)
+                        insert_age = int((int(dt['unix']) - int(ld[2])) / 86400)
+                        update_age = int((int(dt['unix']) - int(ld[3])) / 86400)
+                        self.log(f"core[]:core{{}}:coreSearchSwitchesIPsDatabase():list_data:{type(list_data)}")
+                        result += f"Result ID: {counter}\n"
+                        result += f"Database ID: {ld[0]}\n"
                         result += f"IP Address: {list_data[0]}\n"
+                        result += f"IP Age: {ip_age} days\n"
                         result += f"MAC Address: {list_data[1]}\n"
                         result += f"Switch IP: {list_data[2]}\n"
                         result += f"Port Number: {list_data[3]}\n"
-                        result += f"Insert Date: {ld[2]}\n"
-                        result += f"Update Date: {ld[3]}\n\n"
+                        result += f"Insert Date: {self.cudt(int(ld[2]))} ({insert_age} days ago)\n"
+                        result += f"Update Date: {self.cudt(int(ld[3]))} ({update_age} days ago)\n\n"
+                        counter += 1
                     print(result)
             except Exception as e:
                 self.log(f"core[]:core{{}}:coreSearchSwitchesIPsDatabase():Exeption:{e}")
@@ -1660,7 +1676,7 @@ class App_DB:
             print(f"- F-core, C-App_DB, D-del_ipsubnet_data: {e}")
             sys.exit(1)
 
-    def insert_ipdata(self, imsp, date_time):
+    def insert_ipdata(self, imsp, date_time, edit_field):
         try:
             new_imsp = False
             self.__open()
@@ -1673,14 +1689,16 @@ class App_DB:
                     """INSERT INTO ip_data (
                             imsp,
                             insert_date,
-                            update_date
-                        ) VALUES (?, ?, ?)""", (
+                            update_date,
+                            edit_field
+                        ) VALUES (?, ?, ?, ?)""", (
                         imsp,
                         date_time,
                         date_time,
+                        edit_field,
                     ))
             else:
-                self.cursor.execute("UPDATE ip_data SET update_date = ? WHERE imsp = ?", (date_time, imsp))
+                self.cursor.execute("UPDATE ip_data SET update_date = ?, edit_field = ? WHERE imsp = ?", (date_time, edit_field, imsp,))
 
             self.__close()
             return new_imsp
