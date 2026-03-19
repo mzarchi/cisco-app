@@ -70,6 +70,11 @@ while True:
             # Get CSV from database
             cr.log("main[]:while:switch:case-c:core{}:core[]:coreCreateExportCsvFile()")
             cr.coreCreateExportCsvFile()
+            
+        case "r":
+            # Run SQL query on database
+            cr.log("main[]:while:switch:case-c:core{}:core[]:coreRunSqlQuery()")
+            cr.coreRunSqlQuery()
 
         case "e":
             cr.log("main[]:while:switch:case-e:ter_cls()")
@@ -77,6 +82,6 @@ while True:
             break
 
 '''
-pyinstaller --onefile --icon=icon/cisco-app.ico --name=Cisco-App_vG90-2603 main.py
+pyinstaller --onefile --icon=icon/cisco-app.ico --name=Cisco-App_vG94-2603 main.py
 git rev-list --count HEAD
 '''
