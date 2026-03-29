@@ -1,5 +1,5 @@
 from config import Config
-from core import Core
+#from core import Core
 from encrypt import Encryption
 
 import sqlite3
@@ -9,11 +9,11 @@ class Database:
     cf = Config()
     conn = None
     cursor = None
-    cr = None
+    #cr = None
 
     def __init__(self):
         try:
-            self.cr = Core()
+            #self.cr = Core()
             self.create_tables()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-__init__: {e}")
@@ -297,7 +297,7 @@ class Database:
             sys.exit(1)
 
     def set_dict_ipsubnet_data(self):
-        self.cr.log("core[]:App_DB{}:set_dict_ipsubnet_data()")
+        #self.cr.log("core[]:App_DB{}:set_dict_ipsubnet_data()")
         try:
             self.__open()
             ip_subnet = {}
@@ -336,13 +336,7 @@ class Database:
 
             if not row:
                 new_imsp = True
-                self.cursor.execute(
-                    """INSERT INTO ip_data (
-                            imsp,
-                            insert_date,
-                            update_date,
-                            edit_field
-                        ) VALUES (?, ?, ?, ?)""", (imsp, date_time, date_time, edit_field,))
+                self.cursor.execute("INSERT INTO ip_data (imsp, insert_date, update_date, edit_field) VALUES (?, ?, ?, ?)", (imsp, date_time, date_time, edit_field,))
             else:
                 self.cursor.execute("UPDATE ip_data SET update_date = ?, edit_field = ? WHERE imsp = ?", (date_time, edit_field, imsp,))
 
@@ -389,6 +383,7 @@ class Database:
         self.__open()
         query = "SELECT * FROM ip_data WHERE imsp LIKE ? ORDER BY update_date DESC"
         self.cursor.execute(query, ('%' + mini + '%',))
+        self.__close()
         return self.cursor.fetchall()
 
     def dbRunSqlQuery(self, query):

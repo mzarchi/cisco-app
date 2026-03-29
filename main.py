@@ -1,10 +1,11 @@
 from config import Config
-from core import Core, App_DB
+from database import Database
+from core import Core
 
 import time
 
 cf = Config()
-db = App_DB()
+db = Database()
 cr = Core()
 
 cr.log("main[]:main():Start-app", nl=True)

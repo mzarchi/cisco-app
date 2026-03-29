@@ -177,7 +177,7 @@ class Core:
     def show_banner(self):
         print(Config.banner)
         message = f"Developer: github/mzarchi, Open-Source project\n"
-        message += "First-Commit: G0-2508, version: G94-2603\n" # G{CommitsCounts}-{YYMM}
+        message += "First-Commit: G0-2508, version: G97-2603\n" # G{CommitsCounts}-{YYMM}
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
         message += "I always live in the depths of the Internet ❤️"
@@ -624,7 +624,7 @@ class Core:
                 connect_failed += 1
                 if connect_failed == 3:
                     self.log(f"core[]:core{{}}:case_switch_ips():for:if:if:StopConnectToSwitches")
-                    print("You can't connect to switch!")
+                    print(f"--- - IP: {hip:<18} You can't connect to switch!")
                     break
                 else:
                     self.log(f"core[]:core{{}}:case_switch_ips():for:if:else:GoToNextSwitchIP")
