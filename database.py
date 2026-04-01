@@ -383,7 +383,7 @@ class Database:
         self.__open()
         query = "SELECT * FROM ip_data WHERE imsp LIKE ? ORDER BY update_date DESC"
         self.cursor.execute(query, ('%' + mini + '%',))
-        self.__close()
+        #self.__close()
         return self.cursor.fetchall()
 
     def dbRunSqlQuery(self, query):
