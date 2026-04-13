@@ -177,7 +177,7 @@ class Core:
     def show_banner(self):
         print(Config.banner)
         message = f"Developer: github/mzarchi, Open-Source project\n"
-        message += "First-Commit: G0-2508, version: G97-2603\n" # G{CommitsCounts}-{YYMM}
+        message += "First-Commit: G0-2508, version: G100-2604\n" # G{CommitsCounts}-{YYMM}
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
         message += "I always live in the depths of the Internet ❤️"
@@ -530,15 +530,16 @@ class Core:
                 self.log(f"core[]:core{{}}:case_switch_scan():for:manage_switch_data({ip})")
                 update = self.db.manage_switch_data(data)
                 update_msg = "update" if update else "insert (New!)"
-                uptime_line = f"{counter:<3}- Hostname: {self.cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<3} d, {hours:<2} h, {minutes:<2} m, real-ports: {ports:<3} IOS-version: {ios_version:<15} IOS-type: {ios_type:<25} Action: {update_msg}"
+                uptime_line_file = f"{counter:<3}- Hostname: {self.cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<3} d, {hours:<2} h, {minutes:<2} m, real-ports: {ports:<3} IOS-version: {ios_version:<15} IOS-type: {ios_type:<25} Action: {update_msg}"
+                uptime_line_console = f"{counter:<3}- Hostname: {self.cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<4} d, {hours:<2} h, {minutes:<2} m, Action: {update_msg}"
                 counter += 1
                 # uptime_line = f"{counter:<3}- Hostname: {self.cf.hostname:<30} Uptime: {days:<3} d, {hours:<2} h, {minutes:<2} m"
                 self.log(f"core[]:core{{}}:case_switch_scan():for:CreateFile:Switches-List.txt")
                 with open(f"{self.cf.switchlist_dir}Switches-List_{dt['date']}-{dt['time']}.txt", "a") as file:
-                    file.write(f"{uptime_line} \n")
+                    file.write(f"{uptime_line_file} \n")
 
                 super_putty.append(f'<SessionData SessionId="{self.cf.hostname}" SessionName="{self.cf.hostname}" ImageKey="computer" Host="{ip}" Port="22" Proto="SSH" PuttySession="Default Settings" Username="" ExtraArgs="" SPSLFileName="" RemotePath="" LocalPath="" />')
-                print(uptime_line)
+                print(uptime_line_console)
             except Exception as e:
                 # print(f"- F-core, C-Core, D-case1_handler({ip}): {e}")
                 continue
