@@ -652,40 +652,42 @@ class Core:
                 r".*?"
                 r"(\S*\/\S*)"
             )
-
+            
+            
             date_time = f"{dt['unix']}"
             for line in sidta.splitlines():
-                match = pattern.search(line)
-                if match:
-                    ip, mac, port = match.groups()
-                    if dns_mode:
-                        dns_name = self.get_dns_name(ip)
-                        if dns_name != "None":
-                            imsp = f"{dns_name}|{hip}|{port}"
-                            # imsp = f"{ip}|{dns_name}|{mac}|{hip}|{port}"
-                            self.log("core[]:core{}:case_switch_ips():for:for:if:if:if:App_DB{}.insert_dnsdata(imsp, date_time)")
-                            new_imsp = self.db.insert_dnsdata(imsp, date_time, dt['dati'])
+                if "ACTIVE" in line or "REACHABLE" in line: # For active ip exist in switches
+                    match = pattern.search(line)
+                    if match:
+                        ip, mac, port = match.groups()
+                        if dns_mode:
+                            dns_name = self.get_dns_name(ip)
+                            if dns_name != "None":
+                                imsp = f"{dns_name}|{hip}|{port}"
+                                # imsp = f"{ip}|{dns_name}|{mac}|{hip}|{port}"
+                                self.log("core[]:core{}:case_switch_ips():for:for:if:if:if:App_DB{}.insert_dnsdata(imsp, date_time)")
+                                new_imsp = self.db.insert_dnsdata(imsp, date_time, dt['dati'])
+                                imsp_sec = "Update"
+                                if new_imsp:
+                                    imsp_sec = "Insert (New!)"
+
+                                line = f"{counter:<4}- Switch: {hip:<18} Port: {port:<25} PC-Name: {dns_name:<30} Action: {imsp_sec}"
+                                ip_text_file += f"{line}\n"
+                                print(line)
+                                counter += 1
+
+                        else:
+                            imsp = f"{ip}|{mac}|{hip}|{port}"
+                            self.log(f"core[]:core{{}}:case_switch_ips():for:for:if:if:else:App_DB{{}}.insert_ipdata({imsp}, {date_time}, {dt['dati']})")
+                            new_imsp = self.db.insert_ipdata(imsp, date_time, dt['dati'])
                             imsp_sec = "Update"
                             if new_imsp:
                                 imsp_sec = "Insert (New!)"
 
-                            line = f"{counter:<4}- Switch: {hip:<18} Port: {port:<25} PC-Name: {dns_name:<30} Action: {imsp_sec}"
+                            line = f"{counter:<4}- IP: {ip:<18} MAC: {mac:<18} Switch: {hip:<18} Port: {port:<25} Action: {imsp_sec}"
                             ip_text_file += f"{line}\n"
                             print(line)
                             counter += 1
-
-                    else:
-                        imsp = f"{ip}|{mac}|{hip}|{port}"
-                        self.log(f"core[]:core{{}}:case_switch_ips():for:for:if:if:else:App_DB{{}}.insert_ipdata({imsp}, {date_time}, {dt['dati']})")
-                        new_imsp = self.db.insert_ipdata(imsp, date_time, dt['dati'])
-                        imsp_sec = "Update"
-                        if new_imsp:
-                            imsp_sec = "Insert (New!)"
-
-                        line = f"{counter:<4}- IP: {ip:<18} MAC: {mac:<18} Switch: {hip:<18} Port: {port:<25} Action: {imsp_sec}"
-                        ip_text_file += f"{line}\n"
-                        print(line)
-                        counter += 1
 
         if connect_failed < 3:
             self.log("core[]:core{}:case_switch_ips():for:for:CreateFile:IP-List.txt")
