@@ -177,7 +177,7 @@ class Core:
     def show_banner(self):
         print(Config.banner)
         message = f"Developer: github/mzarchi, Open-Source project\n"
-        message += "First-Commit: G0-2508, version: G102-2605\n" # G{CommitsCounts}-{YYMM}
+        message += "First-Commit: G0-2508, version: G103-2605\n" # G{CommitsCounts}-{YYMM}
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
         message += "I always live in the depths of the Internet ❤️"
@@ -655,8 +655,9 @@ class Core:
             
             
             date_time = f"{dt['unix']}"
+            actives = ["ACTIVE", "Active", "active", "REACHABLE", "Reachable", "reachable"]
             for line in sidta.splitlines():
-                if "ACTIVE" in line or "REACHABLE" in line: # For active ip exist in switches
+                if any(state in line.split() for state in actives): # For active ip exist in switches
                     match = pattern.search(line)
                     if match:
                         ip, mac, port = match.groups()
