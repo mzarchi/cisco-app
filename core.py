@@ -180,7 +180,7 @@ class Core:
         message += "First-Commit: G0-2508, version: G103-2605\n" # G{CommitsCounts}-{YYMM}
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
-        message += "I always live in the depths of the Internet ❤️"
+        message += "I always live in the depths of the Internet ❤️"                                                                                                                  
         print(message)
 
     def show_menu(self):
@@ -216,7 +216,7 @@ class Core:
                 s.close()
             except:
                 pass
-        return open_ports
+        return open_ports 
 
     def case_ip_scanner(self, base_ip_subnet):
         dt = self.get_datetime()
@@ -702,164 +702,104 @@ class Core:
         input("Press any key to exit ..")
 
     def case_config_manager(self):
-        """ Case Draft:
-            1: All
-            2: One
-            -----------
-            1: View
-            2: Set
-            3: Delete
-            -----------
-            1: Switch
-            2: Vlans
-            3: Ports
-              1: Access
-              2: Trunk
-            -----------
         """
-        menu = """- : Not Active
-Switches-Config:
-   111: Action: View       Target: All switches
-   121: Action: Set        Target: All switches -
-   131: Action: Delete     Target: All switches -
-  
-   211: Action: View       Target: One switch (IP) -
-   221: Action: Set        Target: One switch (IP) -
-   231: Action: Delete     Target: One switch (IP) -
+        ### _Support Cases:_
+        ```
+        Method | Object | Obj-Type | Model | Which
+        -------+--------+----------+-------+------
+        SET  |  PORT  |  ACCESS  |  ALL  |  All
+        -------+--------+----------+-------+------
+        SET  |  PORT  |  TRUNK   |  ALL  |  All
+        ```
+        """
+        os.system('cls')
+        files_dict = {}
+        for root, dirs, files in os.walk(self.cf.config_dir):
+            for i, name in enumerate(files):
+                real_dir = str(os.path.join(root, name))
+                files_dict.update({i+1: real_dir})
 
-Vlans-Config:
-   112: Action: View       Target: All switches -
-   122: Action: Set        Target: All switches -
-   132: Action: Delete     Target: All switches -
-  
-   212: Action: View       Target: One switch (IP) -
-   222: Action: Set        Target: One switch (IP) -
-   232: Action: Delete     Target: One switch (IP) -
+        for key in files_dict.keys():
+            print(f"{key:3} {files_dict[key].replace(self.cf.data_dir, "./")}")
 
-Ports-Config:
-  1131: Action: View   (Access Port)    Target: All switches 
-  1231: Action: Config (Access Port)    Target: All switches
-  1331: Action: Delete (Access Port)    Target: All switches -
-  
-  2131: Action: View   (Access Port)    Target: One switch (IP) -
-  2231: Action: Config (Access Port)    Target: One switch (IP)
-  2331: Action: Delete (Access Port)    Target: One switch (IP) -
-  
-  1132: Action: View   (Trunk Port)     Target: All switches
-  1232: Action: Config (Trunk Port)     Target: All switches 
-  1332: Action: Delete (Trunk Port)     Target: All switches
-  
-  2132: Action: View   (Trunk Port)     Target: One switch (IP) -
-  2232: Action: Config (Trunk Port)     Target: One switch (IP)
-  2332: Action: Delete (Trunk Port)     Target: One switch (IP) -
-  
-Please insert option number: """
+        key_file = int(input("Enter file number: "))
+        lines = []
+        with open(files_dict[key_file], "r", encoding="utf-8") as file:
+            for line in file:
+                lines.append(line.replace("\n", ""))
 
-        self.ter_cls()
-        while True:  # ID: ash_w1
-            case_number = input(menu)
+        print("Your Configs: ")
+        for i, fline in enumerate(lines[2:], start=2):
+            print(f"{i:3}. {fline}")
+        user_agree = input("Start program with this config? [Y/N] ")
+        if user_agree == 'Y' or user_agree == 'y':
+            funcs = lines[1].split(":")
+            matches = (funcs[0], funcs[1], funcs[2], funcs[3])
+            match matches:
+                case ("set", "port", "access", "new"):  # set:port:access:new
+                    if funcs[4] == "all":  # set:port:access:new:all
+                        self.scan_network()
+                        all_ip = self.cf.all_switches
+                    else: # set:port:access:new:special-ip
+                        all_ip = [funcs[4]]
 
-            if case_number == "e":
-                self.ter_cls()
-                break
+                    for i, ip in enumerate(all_ip):
+                        connect = self.switch_connect(ip)
+                        if connect is None:
+                            continue
 
-            match case_number:  # ID: ash_m1
-                case "json":
-                    data = {
-                        'switch': 'all',
-                        'action': 'json',
-                        'target': 'port',
-                        'type': 'access',
-                    }
-                    self.coreManagePortConfig(data)
-                    break
+                        version_data = connect.send_command("show version")
+                        model = self.find_model(version_data)
+                        model_number = re.findall(r"\d{4}", model)
+                        if int(model_number[0]) < 9000:
+                            continue
 
-                case "111":
-                    self.coreSwitchSecurityCheck()
-                    break
+                        print(f"- {ip} is opened!")
+                        switch_configs = connect.send_command("show running-config")
+                        switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
+                        interfaces = self.parse_interfaces(switch_configs_lines)
+                        for key in interfaces.keys():
+                            if "switchport mode access" in interfaces[key]:
+                                for i, fline in enumerate(lines[2:], start=2):
+                                    if fline not in interfaces[key]:
+                                        connect.send_config_set([f"interface {key}", fline,])
+                                        print(f"{ip:15} - {key} is set!")
+                                    else:
+                                        print(f"{ip:15} - {key} already set!")
+                        connect.save_config()
 
-                case "1131":
-                    self.coreCheckPortConfig(user_type="Access", set_number=0)
-                    break
+                case ("set", "port", "access", "old"):  # set:port:access:old
+                    if funcs[4] == "all":  # set:port:access:old:all
+                        self.scan_network()
+                        all_ip = self.cf.all_switches
+                    else: # set:port:access:old:special-ip
+                        all_ip = [funcs[4]]
 
-                # case "1231":
-                #    self.coreCheckPortConfig(user_type="Access", set_number=4)
-                #    break
+                    for i, ip in enumerate(all_ip):
+                        connect = self.switch_connect(ip)
+                        if connect is None:
+                            continue
 
-                case "1132":
-                    self.coreCheckPortConfig(user_type="Trunk", set_number=0)
-                    break
+                        version_data = connect.send_command("show version")
+                        model = self.find_model(version_data)
+                        model_number = re.findall(r"\d{4}", model)
+                        if int(model_number[0]) > 9000:
+                            continue
 
-                # case "1232":
-                #    self.coreCheckPortConfig(user_type="Trunk", set_number=6)
-                #    break
-
-                case "1331":
-                    data = {
-                        'switch': 'all',     # 1
-                        'action': 'delete',  # 3
-                        'target': 'port',    # 3
-                        'type': 'access',    # 1
-                    }
-                    self.coreManageConfig(data)
-                    break
-
-                case "1332":
-                    data = {
-                        'switch': 'all',     # 1
-                        'action': 'delete',  # 3
-                        'target': 'port',    # 3
-                        'type': 'trunk',     # 2
-                    }
-                    self.coreManageConfig(data)
-                    break
-
-                case "1231":
-                    # Access, Config, All switches
-                    data = {
-                        'switch': 'all',
-                        'action': 'set',
-                        'target': 'port',
-                        'type': 'access',
-                    }
-                    self.coreManageConfig(data)
-                    break
-
-                case "1232":
-                    # Trunk, Config, All switches
-                    data = {
-                        'switch': 'all',
-                        'action': 'set',
-                        'target': 'port',
-                        'type': 'access',
-                    }
-                    self.coreManageConfig(data)
-                    break
-
-                case "2231":
-                    # Access, Config, One switche
-                    switch_ip = input("Please Enter Switch IP: ")
-                    data = {
-                        'switch': switch_ip,
-                        'action': 'set',
-                        'target': 'port',
-                        'type': 'access',
-                    }
-                    self.coreManageConfig(data)
-                    break
-
-                case "2232":
-                    # Trunk, Config, One switche
-                    switch_ip = input("Please Enter Switch IP: ")
-                    data = {
-                        'switch': switch_ip,
-                        'action': 'set',
-                        'target': 'port',
-                        'type': 'access',
-                    }
-                    self.coreManageConfig(data)
-                    break
-
+                        print(f"- {ip} is opened!")
+                        switch_configs = connect.send_command("show running-config")
+                        switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
+                        interfaces = self.parse_interfaces(switch_configs_lines)
+                        for key in interfaces.keys():
+                            if "switchport mode access" in interfaces[key]:
+                                for i, fline in enumerate(lines[2:], start=2):
+                                    if fline not in interfaces[key]:
+                                        connect.send_config_set([f"interface {key}", fline,])
+                                        print(f"{ip:15} - {key} is set!")
+                                    else:
+                                        print(f"{ip:15} - {key} already set!")
+                        connect.save_config()
+                    
     def coreSwitchSecurityCheck(self):
 
         self.scan_network()
@@ -876,7 +816,6 @@ Please insert option number: """
             if connect is None:
                 continue
 
-            connect = self.switch_connect(ip)
             run_config = connect.send_command("show running-config")
             switch_config = self.coreConfigFormatChanger(run_config)
 
