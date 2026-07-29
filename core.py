@@ -762,8 +762,14 @@ class Core:
                         
                         nfind = []
                         for i, fline in enumerate(lines[2:], start=2):
-                            if fline not in switch_configs_lines:
-                                nfind.append(i)
+                            if "****" in fline:
+                                clean_keyword = fline.replace("****", "")
+                                if not any(clean_keyword in sline for sline in switch_configs_lines):
+                                    nfind.append(i)
+                            else:
+                                if fline not in switch_configs_lines:
+                                    nfind.append(i)
+
                         
                         nfind_str = ""
                         for i in nfind:
