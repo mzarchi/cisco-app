@@ -767,7 +767,8 @@ class Core:
                         
                         nfind_str = ""
                         for i in nfind:
-                            nfind_str += f"{lines[i]}\n"
+                            nfind_str += f"{lines[i].replace('____', '\n  ')}\n"
+                            
                         with open(f"{self.cf.logs_dir}{dt['unix']}-sw{ip}.txt", "a") as file:
                             file.write(nfind_str)
                             
