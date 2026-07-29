@@ -55,7 +55,7 @@ class Config:
         self.mk[0] = self.data_dir = f"C:/Users/{user}/Desktop/CA-Data/"
         self.mk[1] = self.backup_dir = f"{self.data_dir}Backup/"
         self.mk[2] = self.config_dir = f"{self.data_dir}Configs/"
-        self.mk[3] = self.logs_dir = f"{self.data_dir}Configs/logs/"
+        self.mk[3] = self.logs_dir = f"{self.data_dir}ConfigsLogs/"
         self.mk[4] = self.ips_dir = f"{self.data_dir}SwitchesIPs/"
         self.mk[5] = self.vlans_dir = f"{self.data_dir}SwitchVlans/"
         self.mk[6] = self.scanner_dir = f"{self.data_dir}IPScanner/"
