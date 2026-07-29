@@ -764,7 +764,13 @@ class Core:
                         for i, fline in enumerate(lines[2:], start=2):
                             if fline not in switch_configs_lines:
                                 nfind.append(i)
-
+                        
+                        nfind_str = ""
+                        for i in nfind:
+                            nfind_str += f"{lines[i]}\n"
+                        with open(f"{self.cf.logs_dir}{dt['unix']}-sw{ip}.txt", "a") as file:
+                            file.write(nfind_str)
+                            
                         txt_helper = f"ip: {ip:<18}, Model: {model:<20}, Count {len(nfind):<4}, Cases: {", ".join(f"{item:<3}" for item in nfind)}"
                         txt_result += f"{txt_helper}\n"
                         print(txt_helper)
