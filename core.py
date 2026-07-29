@@ -847,12 +847,12 @@ class Core:
                 subs.append(line.strip())
             else:
                 if parent:
-                    joined = parent + "".join("___" + s for s in subs)
+                    joined = parent + "".join("____" + s for s in subs)
                     output.append(joined)
                 parent = line.strip()
                 subs = []
         if parent:
-            joined = parent + "".join("___" + s for s in subs)
+            joined = parent + "".join("____" + s for s in subs)
             output.append(joined)
 
         output = [item for item in output if not set(item) <= {"!"}]
@@ -871,12 +871,12 @@ class Core:
                 subs.append(line.strip())
             else:
                 if parent:
-                    joined = parent + "".join("___" + s for s in subs)
+                    joined = parent + "".join("____" + s for s in subs)
                     output.append(joined)
                 parent = line.strip()
                 subs = []
         if parent:
-            joined = parent + "".join("___" + s for s in subs)
+            joined = parent + "".join("____" + s for s in subs)
             output.append(joined)
 
         output = [item for item in output if not set(item) <= {"!"}]
@@ -889,7 +889,7 @@ class Core:
             if not line.startswith("interface "):
                 continue
 
-            parts = line.split("___", 1)
+            parts = line.split("____", 1)
             key = parts[0].replace("interface ", "")
             if "Vlan" not in key:
                 interfaces[key] = line
@@ -1273,7 +1273,7 @@ class Core:
                             print("="*30)
                             print(f"Total rows: {len(result)}\n")
                     else:
-                        print(f"✔️ Done. Result: {result}\n")
+                        print(f"Done. Result: {result}\n")
 
                 except Exception as e:
-                    print(f"❌ Error executing query: {e}\n")
+                    print(f"Error executing query: {e}\n")
