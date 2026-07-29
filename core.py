@@ -707,12 +707,15 @@ class Core:
         ```
         Method | Object | Obj-Type | Model | Which
         -------+--------+----------+-------+------
-        SET  |  PORT  |  ACCESS  |  ALL  |  All
+          VIEW | Switch |  ------  |  ALL  |  one
         -------+--------+----------+-------+------
-        SET  |  PORT  |  TRUNK   |  ALL  |  All
+          SET  |  PORT  |  ACCESS  |  ALL  |  All
+        -------+--------+----------+-------+------
+          SET  |  PORT  |  TRUNK   |  ALL  |  All
         ```
         """
         os.system('cls')
+        dt = self.get_datetime()
         files_dict = {}
         for root, dirs, files in os.walk(self.cf.config_dir):
             for i, name in enumerate(files):
@@ -729,13 +732,47 @@ class Core:
                 lines.append(line.replace("\n", ""))
 
         print("Your Configs: ")
+        txt_result = ""
         for i, fline in enumerate(lines[2:], start=2):
-            print(f"{i:3}. {fline}")
+            txt_helper = f"{i:3}. {fline}"
+            txt_result += f"{txt_helper}\n"
+            print(txt_helper)
         user_agree = input("Start program with this config? [Y/N] ")
         if user_agree == 'Y' or user_agree == 'y':
             funcs = lines[1].split(":")
             matches = (funcs[0], funcs[1], funcs[2], funcs[3])
             match matches:
+                case ("view", "switch", "-", "all"):  # set:switch:-:all:all
+                    if funcs[4] == "all":  # set:port:access:new:all
+                        self.scan_network()
+                        all_ip = self.cf.all_switches
+                    else: # set:port:access:new:special-ip
+                        all_ip = [funcs[4]]
+                        
+                    for i, ip in enumerate(all_ip):
+                        connect = self.switch_connect(ip)
+                        if connect is None:
+                            continue
+                        
+                        version_data = connect.send_command("show version")
+                        model = self.find_model(version_data)
+                        model_number = re.findall(r"\d{4}", model)
+                        switch_configs = connect.send_command("show running-config")
+                        switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
+                        
+                        nfind = []
+                        for i, fline in enumerate(lines[2:], start=2):
+                            if fline not in switch_configs_lines:
+                                nfind.append(i)
+
+                        txt_helper = f"ip: {ip:<18}, Model: {model:<20}, Count {len(nfind):<4}, Cases: {", ".join(f"{item:<3}" for item in nfind)}"
+                        txt_result += f"{txt_helper}\n"
+                        print(txt_helper)
+
+                    with open(f"{self.cf.logs_dir}{dt['unix']}-{funcs[0]}_{funcs[1]}_{funcs[2]}_{funcs[3]}_result.txt", "a") as file:
+                        file.write(txt_result)
+                    input("Press any key to back ..")
+                
                 case ("set", "port", "access", "new"):  # set:port:access:new
                     if funcs[4] == "all":  # set:port:access:new:all
                         self.scan_network()
