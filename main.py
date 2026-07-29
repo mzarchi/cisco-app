@@ -83,6 +83,6 @@ while True:
             break
 
 '''
-pyinstaller --onefile --icon=icon/cisco-app.ico --name=Cisco-App_vG112-2607 main.py
+pyinstaller --onefile --icon=icon/cisco-app.ico --name=Cisco-App_vG114-2607 main.py
 git rev-list --count HEAD
 '''
