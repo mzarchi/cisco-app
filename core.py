@@ -491,7 +491,7 @@ class Core:
                                 self.db.del_admin_data(en.encode(c3_username))
 
                     self.log("core[]:core{}:app_settings_handler():case_number-2:c2_case_number-3:App_DB{}:set_dict_admin_data()")
-                    self.db.set_dict_admin_data()
+        self.db.set_dict_admin_data()
 
     def case_switch_scan(self):
         super_putty = []
@@ -742,7 +742,7 @@ class Core:
             funcs = lines[1].split(":")
             matches = (funcs[0], funcs[1], funcs[2], funcs[3])
             match matches:
-                case ("view", "switch", "-", "all"):  # set:switch:-:all:all
+                case ("view", "switch", "-", "new"):  # set:switch:-:new:all
                     if funcs[4] == "all":  # set:port:access:new:all
                         self.scan_network()
                         all_ip = self.cf.all_switches
@@ -757,6 +757,56 @@ class Core:
                         version_data = connect.send_command("show version")
                         model = self.find_model(version_data)
                         model_number = re.findall(r"\d{4}", model)
+                        if int(model_number[0]) < 9000:
+                            continue
+                        
+                        switch_configs = connect.send_command("show running-config")
+                        switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
+                        
+                        nfind = []
+                        for i, fline in enumerate(lines[2:], start=2):
+                            if "****" in fline:
+                                clean_keyword = fline.replace("****", "")
+                                if not any(clean_keyword in sline for sline in switch_configs_lines):
+                                    nfind.append(i)
+                            else:
+                                if fline not in switch_configs_lines:
+                                    nfind.append(i)
+
+                        
+                        nfind_str = ""
+                        for i in nfind:
+                            nfind_str += f"{lines[i].replace('____', '\n  ')}\n"
+                            
+                        with open(f"{self.cf.logs_dir}{dt['unix']}-sw{ip}.txt", "a") as file:
+                            file.write(nfind_str)
+                            
+                        txt_helper = f"ip: {ip:<18}, Model: {model:<20}, Count {len(nfind):<4}, Cases: {", ".join(f"{item:<3}" for item in nfind)}"
+                        txt_result += f"{txt_helper}\n"
+                        print(txt_helper)
+
+                    with open(f"{self.cf.logs_dir}{dt['unix']}-{funcs[0]}_{funcs[1]}_{funcs[2]}_{funcs[3]}_result.txt", "a") as file:
+                        file.write(txt_result)
+                    input("Press any key to back ..")
+                    
+                case ("view", "switch", "-", "old"):  # set:switch:-:old:all
+                    if funcs[4] == "all":  # set:port:access:new:all
+                        self.scan_network()
+                        all_ip = self.cf.all_switches
+                    else: # set:port:access:new:special-ip
+                        all_ip = [funcs[4]]
+                        
+                    for i, ip in enumerate(all_ip):
+                        connect = self.switch_connect(ip)
+                        if connect is None:
+                            continue
+                        
+                        version_data = connect.send_command("show version")
+                        model = self.find_model(version_data)
+                        model_number = re.findall(r"\d{4}", model)
+                        if int(model_number[0]) > 3000:
+                            continue
+                        
                         switch_configs = connect.send_command("show running-config")
                         switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
                         
