@@ -899,6 +899,36 @@ class Core:
                                     else:
                                         print(f"{ip:15} - {key} already set!")
                         connect.save_config()
+                
+                case ("set", "port", "trunk", "all"):  # set:port:access:old
+                    if funcs[4] == "all":  # set:port:access:old:all
+                        self.scan_network()
+                        all_ip = self.cf.all_switches
+                    else: # set:port:access:old:special-ip
+                        all_ip = [funcs[4]]
+
+                    for i, ip in enumerate(all_ip):
+                        connect = self.switch_connect(ip)
+                        if connect is None:
+                            continue
+
+                        version_data = connect.send_command("show version")
+                        model = self.find_model(version_data)
+                        model_number = re.findall(r"\d{4}", model)
+
+                        print(f"- {ip} is opened!")
+                        switch_configs = connect.send_command("show running-config")
+                        switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
+                        interfaces = self.parse_interfaces(switch_configs_lines)
+                        for key in interfaces.keys():
+                            if "switchport mode trunk" in interfaces[key]:
+                                for i, fline in enumerate(lines[2:], start=2):
+                                    if fline not in interfaces[key]:
+                                        connect.send_config_set([f"interface {key}", fline,])
+                                        print(f"{ip:15} - {key} is set!")
+                                    else:
+                                        print(f"{ip:15} - {key} already set!")
+                        connect.save_config()
                     
     def coreSwitchSecurityCheck(self):
 
