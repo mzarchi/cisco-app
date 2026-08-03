@@ -899,7 +899,24 @@ class Core:
                                     else:
                                         print(f"{ip:15} - {key} already set!")
                         connect.save_config()
-                
+                        
+                case ("set", "switch", "-", "all"):
+                    if funcs[4] == "all":
+                        self.scan_network()
+                        all_ip = self.cf.all_switches
+                    else:
+                        all_ip = [funcs[4]]
+
+                    for i, ip in enumerate(all_ip):
+                        connect = self.switch_connect(ip)
+                        if connect is None:
+                            continue
+
+                        print(f"- {ip} is opened!")
+                        clines = lines[2:]
+                        connect.send_config_set(clines)
+                        connect.save_config()
+                        
                 case ("set", "port", "trunk", "all"):  # set:port:access:old
                     if funcs[4] == "all":  # set:port:access:old:all
                         self.scan_network()
