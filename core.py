@@ -533,8 +533,28 @@ class Core:
                                                 switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
                                                 cct_text_file = "\n".join(switch_configs_lines) + "\n"
                                                 
-                                                with open(f"{self.cf.debug_result}{dt['date']}_{dt['time']}_{ip:-<15}_{model_number[0]}.txt", "a") as file:
+                                                cct_file_name = f"{self.cf.debug_result}{dt['date']}_{dt['time']}_{ip:-<15}_{model_number[0]}.txt"
+                                                print(f"{ip:<15}: {cct_file_name}")
+                                                with open(cct_file_name, "a") as file:
                                                     file.write(cct_text_file)
+
+                                        case "2":
+                                            cct_user_ip = input("Insert switch ip: ")
+                                            connect = self.switch_connect(cct_user_ip)
+                                            if connect is None:
+                                                continue
+                                            
+                                            version_data = connect.send_command("show version")
+                                            model = self.find_model(version_data)
+                                            model_number = re.findall(r"\d{4}", model)
+                                            switch_configs = connect.send_command("show running-config")
+                                            switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
+                                            cct_text_file = "\n".join(switch_configs_lines) + "\n"
+                                            
+                                            cct_file_name = f"{self.cf.debug_result}{dt['date']}_{dt['time']}_{ip:-<15}_{model_number[0]}.txt"
+                                            print(f"{ip:<15}: {cct_file_name}")
+                                            with open(f"{self.cf.debug_result}{dt['date']}_{dt['time']}_{ip:-<15}_{model_number[0]}.txt", "a") as file:
+                                                file.write(cct_text_file)
         self.db.set_dict_admin_data()
 
     def case_switch_scan(self):
