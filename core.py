@@ -21,10 +21,10 @@ class Core:
     db = Database()
 
     def __init__(self):
-        dt = self.get_datetime()
-        for row, i in enumerate(self.cf.mk):
-            if row > 6:
-                os.makedirs(f"{i}{dt['backup']}/", exist_ok=True)
+        #dt = self.get_datetime()
+        #for row, i in enumerate(self.cf.mk):
+        #    if row > 6:
+        #        os.makedirs(f"{i}{dt['backup']}/", exist_ok=True)
         pass
 
     def log(self, message, nl=False):
@@ -367,6 +367,7 @@ class Core:
         message = "Please select one of the options below:\n"
         message += "\t1- Add/Remove SSH data\n"
         message += "\t2- Add/Remove SSH user login\n"
+        message += "\td- Debug Mode (Safe for user)\n"
         message += "\te- Exit from Settings\nPlease insert option number: "
 
         while True:  # ID: ash_w1
@@ -491,6 +492,49 @@ class Core:
                                 self.db.del_admin_data(en.encode(c3_username))
 
                     self.log("core[]:core{}:app_settings_handler():case_number-2:c2_case_number-3:App_DB{}:set_dict_admin_data()")
+                    
+                case "d":
+                    self.log("core[]:core{}:app_settings_handler():case_number-d")
+                    self.ter_cls()
+                    dt = self.get_datetime()
+                    cd_message = "Please select one of the options below:\n"
+                    cd_message += "\tcct- Config Check Template\n"
+                    cd_message += "\te- Exit\nPlease insert option number: "
+                    cd_case_number = input(cd_message)
+                    while True:
+                        if cd_case_number == "e":
+                            break
+                        
+                        match cd_case_number:
+                            case "cct":
+                                self.ter_cls()
+                                cct_message = "Please select one of the options below:\n"
+                                cct_message += "1. All switch\n"
+                                cct_message += "2. One switch\n"
+                                cct_message += "e. Exit\nYour choose: "
+                                cct_user_input = input(cct_message)
+                                while True:
+                                    if cct_user_input == "e":
+                                        break
+                                    
+                                    match cct_user_input:
+                                        case "1":
+                                            self.scan_network()
+                                            all_ip = self.cf.all_switches
+                                            for i, ip in enumerate(all_ip):
+                                                connect = self.switch_connect(ip)
+                                                if connect is None:
+                                                    continue
+                                                
+                                                version_data = connect.send_command("show version")
+                                                model = self.find_model(version_data)
+                                                model_number = re.findall(r"\d{4}", model)
+                                                switch_configs = connect.send_command("show running-config")
+                                                switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
+                                                cct_text_file = "\n".join(switch_configs_lines) + "\n"
+                                                
+                                                with open(f"{self.cf.debug_result}{dt['date']}_{dt['time']}_{ip:-<15}_{model_number[0]}.txt", "a") as file:
+                                                    file.write(cct_text_file)
         self.db.set_dict_admin_data()
 
     def case_switch_scan(self):
