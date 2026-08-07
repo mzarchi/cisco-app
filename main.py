@@ -2,7 +2,10 @@ from config import Config
 from database import Database
 from core import Core
 
+import ctypes
 import time
+
+ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp (vG130-2608)")
 
 cf = Config()
 db = Database()
@@ -11,6 +14,7 @@ cr = Core()
 cr.log("main[]:main():Start-app", nl=True)
 cr.log("main[]:core[]:Core{}:show_banner()")
 cr.show_banner()
+
 time.sleep(2)
 cr.log("main[]:core[]:App_DB{}:set_dict_admin_data()")
 db.set_dict_admin_data()
