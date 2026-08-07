@@ -26,7 +26,7 @@ class Config:
     domain = ""
     ssh_switch_range = ""
     auth_dict = {}
-    mk = [None] * 16
+    mk = [None] * 17
     banner = """
    █████████   ███                                 █████████                      
   ███░░░░░███ ░░░                                 ███░░░░░███                     
@@ -45,8 +45,8 @@ class Config:
         pass
 
     def create_db_dir(self):
-        user = getpass.getuser()
-        #user = "Zarchi-PC"
+        #user = getpass.getuser()
+        user = "Zarchi-PC"
         self.user = user
         db_dirs = f"C:/Users/{user}/AppData/Local/ca_data/"
         os.makedirs(db_dirs, exist_ok=True)
@@ -68,6 +68,8 @@ class Config:
         self.mk[13] = self.version_dir = f"{self.data_dir}SwitchesVersions/"
         self.mk[14] = self.interface_dir = f"{self.data_dir}SwitchesInterfaces/"
         self.mk[15] = self.switchconfig_dir = f"{self.data_dir}SwitchesConfigs/"
+        self.mk[16] = self.debug_result = f"{self.data_dir}DebugResult/"
+        
 
         for i in self.mk:
             os.makedirs(i, exist_ok=True)

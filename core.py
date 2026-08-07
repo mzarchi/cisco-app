@@ -500,8 +500,8 @@ class Core:
                     cd_message = "Please select one of the options below:\n"
                     cd_message += "\tcct- Config Check Template\n"
                     cd_message += "\te- Exit\nPlease insert option number: "
-                    cd_case_number = input(cd_message)
                     while True:
+                        cd_case_number = input(cd_message)
                         if cd_case_number == "e":
                             break
                         
@@ -512,49 +512,37 @@ class Core:
                                 cct_message += "1. All switch\n"
                                 cct_message += "2. One switch\n"
                                 cct_message += "e. Exit\nYour choose: "
-                                cct_user_input = input(cct_message)
                                 while True:
+                                    cct_user_input = input(cct_message)
                                     if cct_user_input == "e":
                                         break
                                     
-                                    match cct_user_input:
-                                        case "1":
-                                            self.scan_network()
-                                            all_ip = self.cf.all_switches
-                                            for i, ip in enumerate(all_ip):
-                                                connect = self.switch_connect(ip)
-                                                if connect is None:
-                                                    continue
-                                                
-                                                version_data = connect.send_command("show version")
-                                                model = self.find_model(version_data)
-                                                model_number = re.findall(r"\d{4}", model)
-                                                switch_configs = connect.send_command("show running-config")
-                                                switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
-                                                cct_text_file = "\n".join(switch_configs_lines) + "\n"
-                                                
-                                                cct_file_name = f"{self.cf.debug_result}{dt['date']}_{dt['time']}_{ip:-<15}_{model_number[0]}.txt"
-                                                print(f"{ip:<15}: {cct_file_name}")
-                                                with open(cct_file_name, "a") as file:
-                                                    file.write(cct_text_file)
+                                    if cct_user_input == "1":  # set:port:access:new:all
+                                        self.scan_network()
+                                        all_ip = self.cf.all_switches
+                                    elif cct_user_input == "2":
+                                        ip = input("Insert switch ip: ")
+                                        all_ip = [ip]
+                                    else:
+                                        continue
+                                    
+                                    for i, ip in enumerate(all_ip):
+                                        connect = self.switch_connect(ip)
+                                        if connect is None:
+                                            continue
+                                        
+                                        version_data = connect.send_command("show version")
+                                        model = self.find_model(version_data)
+                                        model_number = re.findall(r"\d{4}", model)
+                                        switch_configs = connect.send_command("show running-config")
+                                        switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
+                                        cct_text_file = "\n".join(switch_configs_lines) + "\n"
+                                        
+                                        cct_file_name = f"{self.cf.debug_result}{dt['date']}_{dt['time']}_{ip:-<15}_{model_number[0]}.txt"
+                                        print(f"{ip:<15}: {cct_file_name}")
+                                        with open(cct_file_name, "a") as file:
+                                            file.write(cct_text_file)
 
-                                        case "2":
-                                            cct_user_ip = input("Insert switch ip: ")
-                                            connect = self.switch_connect(cct_user_ip)
-                                            if connect is None:
-                                                continue
-                                            
-                                            version_data = connect.send_command("show version")
-                                            model = self.find_model(version_data)
-                                            model_number = re.findall(r"\d{4}", model)
-                                            switch_configs = connect.send_command("show running-config")
-                                            switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
-                                            cct_text_file = "\n".join(switch_configs_lines) + "\n"
-                                            
-                                            cct_file_name = f"{self.cf.debug_result}{dt['date']}_{dt['time']}_{ip:-<15}_{model_number[0]}.txt"
-                                            print(f"{ip:<15}: {cct_file_name}")
-                                            with open(f"{self.cf.debug_result}{dt['date']}_{dt['time']}_{ip:-<15}_{model_number[0]}.txt", "a") as file:
-                                                file.write(cct_text_file)
         self.db.set_dict_admin_data()
 
     def case_switch_scan(self):
