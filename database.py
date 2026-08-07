@@ -355,16 +355,7 @@ class Database:
 
             if not row:
                 new_imsp = True
-                self.cursor.execute(
-                    """INSERT INTO dns_data (
-                            imsp,
-                            insert_date,
-                            update_date
-                        ) VALUES (?, ?, ?)""", (
-                        imsp,
-                        date_time,
-                        date_time,
-                    ))
+                self.cursor.execute("""INSERT INTO dns_data (imsp, insert_date, update_date) VALUES (?, ?, ?)""", (imsp, date_time, date_time,))
             else:
                 self.cursor.execute("UPDATE dns_data SET update_date = ? WHERE imsp = ?", (date_time, imsp))
 
