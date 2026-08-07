@@ -9,7 +9,6 @@ from concurrent.futures import ThreadPoolExecutor
 import os
 import re
 import csv
-import json
 import socket
 import getpass
 import platform
@@ -21,10 +20,6 @@ class Core:
     db = Database()
 
     def __init__(self):
-        #dt = self.get_datetime()
-        #for row, i in enumerate(self.cf.mk):
-        #    if row > 6:
-        #        os.makedirs(f"{i}{dt['backup']}/", exist_ok=True)
         pass
 
     def log(self, message, nl=False):
@@ -57,13 +52,6 @@ class Core:
                 if result and result not in Config.all_switches:
                     Config.all_switches.append(result)
 
-    def read_file(self, dir: str, file: str):
-        content = None
-        with open(f"{dir}/{file}", "r", encoding="utf-8") as file:
-            content = file.read()
-
-        return content
-
     def manage_content(self, content: str):
         content = content.split("-------------------------")
         del content[0]
@@ -71,13 +59,6 @@ class Core:
 
     def switch_data(self, switch: list):
         result = {}
-
-        # IPv4 Value
-        # ipv4_pattern = r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b"
-        # ipv4_find = re.findall(ipv4_pattern, switch)
-        # result.update({"sw_ip" : ipv4_find[0]})
-
-        # Switch Name
         deviveID_pattern = r".*Device ID:.*"
         deviveID_find = re.findall(deviveID_pattern, switch)[0]
         replacement = {"Device ID: ": "", Config.domain: ""}
@@ -85,7 +66,6 @@ class Core:
             deviveID_find = deviveID_find.replace(i, replacement[i])
         result.update({"device": deviveID_find})
 
-        # Switch Port Details
         port_pattern = r".*Interface:.*"
         port_find = re.findall(port_pattern, switch)[0]
         port_find = port_find.split(",")
@@ -370,7 +350,7 @@ class Core:
         message += "\td- Debug Mode (Safe for user)\n"
         message += "\te- Exit from Settings\nPlease insert option number: "
 
-        while True:  # ID: ash_w1
+        while True:
             self.log("core[]:core{}:app_settings_handler():case_number:input()")
             case_number = input(message)
 
@@ -378,7 +358,7 @@ class Core:
                 self.ter_cls()
                 break
 
-            match case_number:  # ID: ash_m1
+            match case_number:
                 case "1":
                     self.log("core[]:core{}:app_settings_handler():case_number-1")
                     self.ter_cls()
@@ -445,13 +425,13 @@ class Core:
                     c2_message += "\t2- Show Admin\n"
                     c2_message += "\t3- Remove Admin\n"
                     c2_message += "\te- Exit\nPlease insert option number: "
-                    while True:  # ID: ash_w2
+                    while True:
                         self.log("core[]:core{}:app_settings_handler():case_number-2:c2_case_number:imput()")
                         c2_case_number = input(c2_message)
                         if c2_case_number == "e":
                             break
 
-                        match c2_case_number:  # ID: ash_m2
+                        match c2_case_number:
                             case "1":
                                 self.log("core[]:core{}:app_settings_handler():case_number-2:c2_case_number-1")
                                 self.ter_cls()
@@ -517,7 +497,7 @@ class Core:
                                     if cct_user_input == "e":
                                         break
                                     
-                                    if cct_user_input == "1":  # set:port:access:new:all
+                                    if cct_user_input == "1":
                                         self.scan_network()
                                         all_ip = self.cf.all_switches
                                     elif cct_user_input == "2":
@@ -593,7 +573,6 @@ class Core:
                 super_putty.append(f'<SessionData SessionId="{self.cf.hostname}" SessionName="{self.cf.hostname}" ImageKey="computer" Host="{ip}" Port="22" Proto="SSH" PuttySession="Default Settings" Username="" ExtraArgs="" SPSLFileName="" RemotePath="" LocalPath="" />')
                 print(uptime_line_console)
             except Exception as e:
-                # print(f"- F-core, C-Core, D-case1_handler({ip}): {e}")
                 continue
 
         self.log(f"core[]:core{{}}:case_switch_scan():CreateFile:super-putty.xml")
@@ -652,6 +631,7 @@ class Core:
             name = socket.gethostbyaddr(ip)
             result = name[0].replace(self.cf.domain, "")
         except Exception as e:
+            result = "DNS-Empty"
             self.log(f"core[]:core{{}}:get_dns_name():Error:{e}")
 
         return result
@@ -667,6 +647,7 @@ class Core:
         else:
             switch_ips.append(user_special_ip)
 
+        dns_i = 0
         dt = self.get_datetime()
         self.log(f"core[]:core{{}}:case_switch_ips():{dt}")
         ip_text_file = ""
@@ -705,29 +686,31 @@ class Core:
                 r"(\S*\/\S*)"
             )
             
-            
             date_time = f"{dt['unix']}"
             actives = ["ACTIVE", "Active", "active", "REACHABLE", "Reachable", "reachable"]
             for line in sidta.splitlines():
-                if any(state in line.split() for state in actives): # For active ip exist in switches
+                if any(state in line.split() for state in actives):
                     match = pattern.search(line)
                     if match:
                         ip, mac, port = match.groups()
                         if dns_mode:
                             dns_name = self.get_dns_name(ip)
-                            if dns_name != "None":
-                                imsp = f"{dns_name}|{hip}|{port}"
-                                # imsp = f"{ip}|{dns_name}|{mac}|{hip}|{port}"
-                                self.log("core[]:core{}:case_switch_ips():for:for:if:if:if:App_DB{}.insert_dnsdata(imsp, date_time)")
-                                new_imsp = self.db.insert_dnsdata(imsp, date_time, dt['dati'])
-                                imsp_sec = "Update"
-                                if new_imsp:
-                                    imsp_sec = "Insert (New!)"
-
-                                line = f"{counter:<4}- Switch: {hip:<18} Port: {port:<25} PC-Name: {dns_name:<30} Action: {imsp_sec}"
-                                ip_text_file += f"{line}\n"
-                                print(line)
-                                counter += 1
+                            imsp = f"{dns_name}|{hip}|{port}"
+                            self.log("core[]:core{}:case_switch_ips():for:for:if:if:if:App_DB{}.insert_dnsdata(imsp, date_time)")
+                            new_imsp = self.db.insert_dnsdata(imsp, date_time)
+                            imsp_sec = "Update"
+                            if new_imsp:
+                                imsp_sec = "Insert (New!)"
+                                
+                            if dns_name != "DNS-Empty":
+                                dns_i += 1
+                                line = f"({counter:<3}, {dns_i:<3}) - IP: {ip:<18} Switch: {hip:<18} Port: {port:<25} PC-Name: {dns_name:<30} Action: {imsp_sec}"
+                            else:
+                                line = f"({counter:<3}, ---) - IP: {ip:<18} Switch: {hip:<18} Port: {port:<25} PC-Name: {dns_name:<30} Action: {imsp_sec}"
+                                
+                            ip_text_file += f"{line}\n"
+                            print(line)
+                            counter += 1
 
                         else:
                             imsp = f"{ip}|{mac}|{hip}|{port}"
@@ -794,11 +777,11 @@ class Core:
             funcs = lines[1].split(":")
             matches = (funcs[0], funcs[1], funcs[2], funcs[3])
             match matches:
-                case ("view", "switch", "-", "new"):  # set:switch:-:new:all
-                    if funcs[4] == "all":  # set:port:access:new:all
+                case ("view", "switch", "-", "new"):
+                    if funcs[4] == "all":
                         self.scan_network()
                         all_ip = self.cf.all_switches
-                    else: # set:port:access:new:special-ip
+                    else:
                         all_ip = [funcs[4]]
                         
                     for i, ip in enumerate(all_ip):
@@ -841,11 +824,11 @@ class Core:
                         file.write(txt_result)
                     input("Press any key to back ..")
                     
-                case ("view", "switch", "-", "old"):  # set:switch:-:old:all
-                    if funcs[4] == "all":  # set:port:access:new:all
+                case ("view", "switch", "-", "old"):
+                    if funcs[4] == "all":
                         self.scan_network()
                         all_ip = self.cf.all_switches
-                    else: # set:port:access:new:special-ip
+                    else:
                         all_ip = [funcs[4]]
                         
                     for i, ip in enumerate(all_ip):
@@ -888,11 +871,11 @@ class Core:
                         file.write(txt_result)
                     input("Press any key to back ..")
                 
-                case ("set", "port", "access", "new"):  # set:port:access:new
-                    if funcs[4] == "all":  # set:port:access:new:all
+                case ("set", "port", "access", "new"):
+                    if funcs[4] == "all":
                         self.scan_network()
                         all_ip = self.cf.all_switches
-                    else: # set:port:access:new:special-ip
+                    else:
                         all_ip = [funcs[4]]
 
                     for i, ip in enumerate(all_ip):
@@ -920,11 +903,11 @@ class Core:
                                         print(f"{ip:15} - {key} already set!")
                         connect.save_config()
 
-                case ("set", "port", "access", "old"):  # set:port:access:old
-                    if funcs[4] == "all":  # set:port:access:old:all
+                case ("set", "port", "access", "old"):
+                    if funcs[4] == "all":
                         self.scan_network()
                         all_ip = self.cf.all_switches
-                    else: # set:port:access:old:special-ip
+                    else:
                         all_ip = [funcs[4]]
 
                     for i, ip in enumerate(all_ip):
@@ -969,11 +952,11 @@ class Core:
                         connect.send_config_set(clines)
                         connect.save_config()
                         
-                case ("set", "port", "trunk", "all"):  # set:port:access:old
-                    if funcs[4] == "all":  # set:port:access:old:all
+                case ("set", "port", "trunk", "all"):
+                    if funcs[4] == "all":
                         self.scan_network()
                         all_ip = self.cf.all_switches
-                    else: # set:port:access:old:special-ip
+                    else:
                         all_ip = [funcs[4]]
 
                     for i, ip in enumerate(all_ip):
@@ -998,65 +981,7 @@ class Core:
                                     else:
                                         print(f"{ip:15} - {key} already set!")
                         connect.save_config()
-                    
-    def coreSwitchSecurityCheck(self):
-
-        self.scan_network()
-
-        user_config = self.coreUserConfigFormatChanger()
-        print("Security check code:")
-        for i, line in enumerate(user_config):
-            print(f"{i+1:<3}- {line}")
-
-        print("\nSwitch list with above code:")
-        all_ip = self.cf.all_switches
-        for i, ip in enumerate(all_ip):
-            connect = self.switch_connect(ip)
-            if connect is None:
-                continue
-
-            run_config = connect.send_command("show running-config")
-            switch_config = self.coreConfigFormatChanger(run_config)
-
-            results = [f"{i}:N" for i, word in enumerate(user_config, start=1) if word not in switch_config]
-            output = "  ".join(results)
-            print(f"{ip:<18} - {output}")
-
-        input("Task finished! press Enter to continue ..")
-        os.system('cls')
-
-    def coreUserConfigFormatChanger(self):
-
-        self.scan_network()
-        filename = f"{self.cf.config_dir}/Switch-Configs.txt"
-
-        lines = []
-        with open(filename, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-
-        output = []
-        parent = None
-        subs = []
-
-        for line in lines:
-            line = line.rstrip()
-            if not line:
-                continue
-            if line.startswith("    "):
-                subs.append(line.strip())
-            else:
-                if parent:
-                    joined = parent + "".join("____" + s for s in subs)
-                    output.append(joined)
-                parent = line.strip()
-                subs = []
-        if parent:
-            joined = parent + "".join("____" + s for s in subs)
-            output.append(joined)
-
-        output = [item for item in output if not set(item) <= {"!"}]
-        return output
-
+                        
     def coreConfigFormatChanger(self, config):
         output = []
         parent = None
@@ -1097,217 +1022,6 @@ class Core:
     def coreWriteFile(self, dir_name, contents):
         with open(dir_name, "a") as file:
             file.write(contents)
-
-    def coreManageConfig(self, data):
-        match data['target']:
-            case "port":
-                self.coreManagePortConfig(data)
-
-    def coreManagePortConfig(self, data):
-        self.log(f"core[]:core{{}}:coreManagePortConfig({data})")
-        switch_list = []
-        if data['switch'] == "all":
-            self.scan_network()
-            switch_list = self.cf.all_switches
-        else:
-            switch_list.append(data['switch'])
-
-        self.log(f"core[]:core{{}}:coreManagePortConfig():switch_list[{switch_list}]")
-        match data['action']:
-            case "set":
-                port_config_set_file = f"{self.cf.config_dir}/Ports-Access-Set.txt"
-                if data['type'] == "trunk":
-                    port_config_set_file = f"{self.cf.config_dir}/Ports-Trunk-Set.txt"
-
-                with open(port_config_set_file, "r", encoding="utf-8") as f:
-                    port_config_set_lines = [f"{line.strip()}" for line in f]
-
-                print("Ports User Configs:")
-                user_config_dict = {}
-                for i, line in enumerate(port_config_set_lines):
-                    user_config_dict.update({i: line})
-
-                print("\n".join(f"{str(i+1).zfill(2)}: {item}" for i, item in enumerate(port_config_set_lines)), "\n\nPorts Status:")
-                for switch in switch_list:
-                    try:
-                        connect = self.switch_connect(switch)
-                        switch_config = connect.send_command("show running-config")
-                        switch_lines = self.coreConfigFormatChanger(switch_config)
-                        interfaces_dict = self.parse_interfaces(switch_lines)
-                        connect.config_mode()
-                        for port in interfaces_dict.keys():
-                            if data['type'] == "access" and "access" in interfaces_dict[port]:
-                                connect.send_command_timing(f"interface {port}")
-                                result_str = ""
-                                for uckey in user_config_dict.keys():
-                                    if user_config_dict[uckey] not in interfaces_dict[port]:
-                                        self.log(user_config_dict[uckey])
-                                        self.log(interfaces_dict[port])
-                                        run_result = connect.send_command_timing(user_config_dict[uckey])
-                                        if "% Invalid" not in run_result:
-                                            cid = uckey + 1
-                                            if cid > 9:
-                                                result_str += f" [{cid}]"
-                                            else:
-                                                result_str += f" [0{cid}]"
-                                print(f"Switch-IP: {switch:<18} Mode: Access, Port: {port:<30} Applied: {result_str}")
-                            elif data['type'] == "trunk" and "trunk" in interfaces_dict[port]:
-                                connect.send_command_timing(f"interface {port}")
-                                result_str = ""
-                                for uckey in user_config_dict.keys():
-                                    if user_config_dict[uckey] not in interfaces_dict[port]:
-                                        run_result = connect.send_command_timing(user_config_dict[uckey])
-                                        if "% Invalid" not in run_result:
-                                            cid = uckey + 1
-                                            if cid > 9:
-                                                result_str += f" [{cid}]"
-                                            else:
-                                                result_str += f" [0{cid}]"
-                                print(f"Switch-IP: {switch:<18} Mode: Trunk, Port: {port:<30}, Applied: {result_str}")
-                        connect.save_config()
-                    except Exception as e:
-                        self.log(f"core[]:core{{}}:coreManagePortConfig():match[]:case[set]:for:except:{e}")
-                        continue
-                input("Insert any key to back ...")
-
-            case "delete":
-                port_config_delete_file = f"{self.cf.config_dir}/Ports-Access-Delete.txt"
-                if data['type'] == "trunk":
-                    port_config_delete_file = f"{self.cf.config_dir}/Ports-Trunk-Delete.txt"
-
-                with open(port_config_delete_file, "r", encoding="utf-8") as f:
-                    port_config_delete_file = [f"no {line.strip()}" for line in f]
-
-                for switch in switch_list:
-                    try:
-                        connect = self.switch_connect(switch)
-                        switch_config = connect.send_command("show running-config")
-                        switch_lines = self.coreConfigFormatChanger(switch_config)
-                        interfaces_dict = self.parse_interfaces(switch_lines)
-                        for port, config in interfaces_dict.items():
-                            if data['type'] == "access" and "access" in config:
-                                commands = [f"interface {port}"] + port_config_delete_file
-                                connect.send_config_set(commands)
-                                print(f"Switch-IP: {switch:<18} Mode: access, Port: {port}")
-
-                            elif data['type'] == "trunk" and "trunk" in config:
-                                commands = [f"interface {port}"] + port_config_delete_file
-                                connect.send_config_set(commands)
-                                print(f"Switch-IP: {switch:<18} Mode: trunk, Port: {port}")
-                        connect.save_config()
-                    except Exception as e:
-                        continue
-
-            case "json":
-                json_config_file = f"{self.cf.config_dir}/Free-Config.json"
-                with open(json_config_file, "r", encoding="utf-8") as file:
-                    json_data = json.load(file)
-                switch_list = []
-                if json_data['switch'] == "all":
-                    switch_list = self.cf.all_switches
-                else:
-                    switch_list.append(json_data['switch_ip'])
-
-                for ip in switch_list:
-                    change_config = False
-                    try:
-                        connect = self.switch_connect(ip)
-                        switch_config = connect.send_command("show running-config")
-                        switch_lines = self.coreConfigFormatChanger(switch_config)
-                    except Exception as e:
-                        continue
-
-                    if json_data['target'] == "port":
-                        interfaces_dict = self.parse_interfaces(switch_lines)
-                        match json_data['type']:
-                            case "all":
-                                for key, value in interfaces_dict.items():
-                                    try:
-                                        if json_data['value'] not in value:
-                                            commands = [f"interface {key}"]
-                                            for item in json_data['commands']:
-                                                commands.append(item)
-                                                connect.send_config_set(commands)
-                                                print(f"switch: {ip:<18} description: ********, Interface {key}")
-                                                change_config = True
-                                    except Exception as e:
-                                        print(f"{key}: {e}")
-                                        continue
-                    if not change_config:
-                        print(f"Switch: {ip:<18} not changed!")
-
-                    if json_data['save']:
-                        connect.save_config()
-
-    def coreCheckPortConfig(self, user_type: str, set_number: int):
-        dt = self.get_datetime()
-        self.scan_network()
-
-        user_lines = []
-        filename = ""
-        ports_configs = ""
-        if user_type == "Trunk":
-            ports_configs = f"{self.cf.config_dir}/Result/Ports-Trunk-Configs_{dt['date']}-{dt['time']}.txt"
-            filename = f"{self.cf.config_dir}/Ports-Trunk-Configs.txt"
-            with open(filename, "r", encoding="utf-8") as f:
-                user_lines = [line.strip() for line in f]
-        else:
-            ports_configs = f"{self.cf.config_dir}/Result/Ports-Access-Configs_{dt['date']}-{dt['time']}.txt"
-            filename = f"{self.cf.config_dir}/Ports-Access-Configs.txt"
-            with open(filename, "r", encoding="utf-8") as f:
-                user_lines = [line.strip() for line in f]
-
-        print("Ports User Config:")
-        print("\n".join(f"{str(i+1).zfill(2)}: {item}" for i, item in enumerate(user_lines)), "\n\nPorts Status:\n")
-
-        for ip in self.cf.all_switches:
-            try:
-                connect = self.switch_connect(ip)
-                switch_config = connect.send_command("show running-config")
-                switch_lines = self.coreConfigFormatChanger(switch_config)
-                interfaces_dict = self.parse_interfaces(switch_lines)
-                version_data = connect.send_command("show version")
-                model = self.find_model(version_data)
-                model_number = re.findall(r"\d{4}", model)
-
-                port_commands = {}
-                for key, value in interfaces_dict.items():
-                    port_commands[key] = []
-                    port_type = "Warning!"
-                    if "switchport access vlan" in value:
-                        port_type = "Access"
-                    elif "switchport mode trunk" in value:
-                        port_type = "Trunk"
-
-                    if (user_type == "Trunk" and port_type == "Trunk") or (user_type == "Access" and port_type == "Access"):
-                        msg2 = f"- IP: {ip:<18} Switch-Model: {model_number[0]}     Port: {key:<30} Port-Type: {port_type:<10} Missings: "
-                        self.coreWriteFile(ports_configs, msg2)
-                        print(msg2, end="")
-                        for ul in user_lines:
-                            if ul not in value:
-                                port_commands[key].append(ul)
-                                msg3 = f"{str(user_lines.index(ul)+1).zfill(2)}:N "
-                                self.coreWriteFile(ports_configs, msg3)
-                                print(msg3, end="")
-
-                        self.coreWriteFile(ports_configs, "\n")
-                        print("")
-                if set_number != 0:
-                    accept_set = input("Add this commands to switch (Y/N) ? ")
-                    if accept_set == "Y" or accept_set == "y":
-                        for key, value in port_commands.items():
-                            commands = port_commands[key]
-                            if len(commands) > 0:
-                                port = key
-                                connect.send_config_set([f"interface {port}"] + commands)
-                                print(f"port {key}: Add {commands}")
-                        connect.save_config()
-
-            except Exception as e:
-                continue
-
-        input("Task finished! press Enter to continue ..")
-        os.system('cls')
 
     def coreCreateExportCsvFile(self):
         ip_row = self.db.databaseGetIpData()
