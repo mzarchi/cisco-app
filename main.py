@@ -5,7 +5,7 @@ from core import Core
 import ctypes
 import time
 
-ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp (vG130-2608)")
+ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp vG132-2608")
 
 cf = Config()
 db = Database()
@@ -87,6 +87,6 @@ while True:
             break
 
 '''
-pyinstaller --onefile --icon=icon/cisco-app.ico --version-file="version_info.txt" --name=Cisco-App_vG130-2608 main.py
+pyinstaller --onefile --icon=icon/cisco-app.ico --version-file="version_info.txt" --name=Cisco-App_vG132-2608 main.py
 git rev-list --count HEAD
 '''
