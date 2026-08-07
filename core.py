@@ -666,12 +666,6 @@ class Core:
 
             self.log(f"core[]:core{{}}:case_switch_ips():for:Connectivity({hip})")
             connect_failed = 0
-            self.log("core[]:core{}:case_switch_ips():for:send_command(show version)")
-            # version_data = connect.send_command("show version")
-            self.log("core[]:core{}:case_switch_ips():for:find_model(version_data)")
-            # model = self.find_model(version_data)
-            # model_number = re.findall(r"\d{4}", model)
-
             self.log("core[]:core{}:case_switch_ips():for:send_command(show ip device tracking all)")
             sidta = connect.send_command("show ip device tracking all")
             if "%" in sidta:
