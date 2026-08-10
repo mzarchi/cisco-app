@@ -60,8 +60,13 @@ while True:
             # Switch Config Manager
             cr.log("main[]:while:switch:case-6:core{}:core[]:case_config_manager()")
             cr.case_config_manager()
-            
+        
         case "7":
+            # Access-List Manager
+            cr.log("main[]:while:switch:case-7:core{}:core[]:coreGetSwitchesBackup()")
+            cr.coreAccessListManager()
+        
+        case "8":
             # Case Backup
             cr.log("main[]:while:switch:case-7:core{}:core[]:coreGetSwitchesBackup()")
             cr.coreGetSwitchesBackup()
