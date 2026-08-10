@@ -173,7 +173,8 @@ class Core:
         message += "\t4- Swtiches IPs (Get list of your IP Address in your switch)\n"
         message += "\t5- Get DNS name by IP\n"
         message += "\t6- Switch Config Manager\n"
-        message += "\t7- Get Backup from Config/Interfaces/version/CDP details of switches\n"
+        message += "\t7- Access-List Manager"
+        message += "\t8- Get Backup from Config/Interfaces/version/CDP details of switches\n"
         message += "\ts- Search in Switches IPs database\n"
         message += "\tc- Get CSV from database\n"
         message += "\tr- Run SQL Query on database\n"
@@ -562,7 +563,7 @@ class Core:
                 self.log(f"core[]:core{{}}:case_switch_scan():for:manage_switch_data({ip})")
                 update = self.db.manage_switch_data(data)
                 update_msg = "update" if update else "insert (New!)"
-                uptime_line_file = f"{counter:<3}- Hostname: {self.cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<3} d, {hours:<2} h, {minutes:<2} m, real-ports: {ports:<3} IOS-version: {ios_version:<15} IOS-type: {ios_type:<25} Action: {update_msg}"
+                uptime_line_file = f"{counter:<3}- Hostname: {self.cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<4} d, {hours:<2} h, {minutes:<2} m, real-ports: {ports:<3} IOS-version: {ios_version:<15} IOS-type: {ios_type:<25} Action: {update_msg}"
                 uptime_line_console = f"{counter:<3}- Hostname: {self.cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<4} d, {hours:<2} h, {minutes:<2} m, Action: {update_msg}"
                 counter += 1
                 # uptime_line = f"{counter:<3}- Hostname: {self.cf.hostname:<30} Uptime: {days:<3} d, {hours:<2} h, {minutes:<2} m"
@@ -631,7 +632,7 @@ class Core:
             name = socket.gethostbyaddr(ip)
             result = name[0].replace(self.cf.domain, "")
         except Exception as e:
-            result = "DNS-Empty"
+            result = "---------------"
             self.log(f"core[]:core{{}}:get_dns_name():Error:{e}")
 
         return result
@@ -696,7 +697,7 @@ class Core:
                             if new_imsp:
                                 imsp_sec = "Insert (New!)"
                                 
-                            if dns_name != "DNS-Empty":
+                            if dns_name != "---------------":
                                 dns_i += 1
                                 line = f"({counter:<3}, {dns_i:<3}) - IP: {ip:<18} Switch: {hip:<18} Port: {port:<25} PC-Name: {dns_name:<30} Action: {imsp_sec}"
                             else:
@@ -736,9 +737,23 @@ class Core:
         ```
         Method | Object | Obj-Type | Model | Which
         -------+--------+----------+-------+------
-          VIEW | Switch |  ------  |  ALL  |  one
+          VIEW | Switch |  ------  |  New  |  One
         -------+--------+----------+-------+------
-          SET  |  PORT  |  ACCESS  |  ALL  |  All
+          VIEW | Switch |  ------  |  New  |  All
+        -------+--------+----------+-------+------
+          VIEW | Switch |  ------  |  Old  |  One
+        -------+--------+----------+-------+------
+          VIEW | Switch |  ------  |  Old  |  All
+        -------+--------+----------+-------+------
+          SET  |  PORT  |  ACCESS  |  New  |  One
+        -------+--------+----------+-------+------
+          SET  |  PORT  |  ACCESS  |  New  |  All
+        -------+--------+----------+-------+------
+          SET  |  PORT  |  ACCESS  |  Old  |  One
+        -------+--------+----------+-------+------
+          SET  |  PORT  |  ACCESS  |  Old  |  All
+        -------+--------+----------+-------+------
+          SET  |  PORT  |  TRUNK   |  ALL  |  One
         -------+--------+----------+-------+------
           SET  |  PORT  |  TRUNK   |  ALL  |  All
         ```
