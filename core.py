@@ -736,7 +736,7 @@ class Core:
         uc_msg += "1. View switch access-list and rules\n"
         uc_msg += "2. Add switch access-list\n"
         uc_msg += "3. Add access-list rule\n"
-        uc_msg += "4. Debug\n"
+        uc_msg += "d. Debug\n"
         uc_msg += "e. Exit\n"
         uc_msg += "Enter your choose: "
         while True:
@@ -791,8 +791,9 @@ class Core:
                     if new_access_list == "e":
                         break
                     connect.send_config_set(new_access_list)
+                    connect.save_config()
                     
-            elif user_case == "4":
+            elif user_case == "d":
                 user_ip = input("Enter switch ip (e:exit): ")
                 connect = self.switch_connect(user_ip)
                 connect.config_mode()
