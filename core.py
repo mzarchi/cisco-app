@@ -765,6 +765,23 @@ class Core:
             else:
                 continue
     
+    def __get_switch_access_list_dict(self, connect):
+        command_result = connect.send_command("show access-lists")
+        result = {}
+        current_key = None
+
+        for line in command_result.splitlines():
+            if not line.strip():
+                continue
+
+            if not line.startswith(" "):
+                current_key = line.strip()
+                result[current_key] = []
+            else:
+                result[current_key].append(line.strip())
+                
+        return result
+    
     def case_config_manager(self):
         """
         ### _Support Cases:_
