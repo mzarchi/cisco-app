@@ -793,7 +793,11 @@ class Core:
                     connect.send_config_set(new_access_list)
                     
             elif user_case == "4":
-                pass
+                user_ip = input("Enter switch ip (e:exit): ")
+                connect = self.switch_connect(user_ip)
+                connect.config_mode()
+                input()
+                
             elif user_case == "e":
                 break
             else:
