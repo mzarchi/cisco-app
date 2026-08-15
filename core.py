@@ -757,7 +757,41 @@ class Core:
                         print()
                         
             elif user_case == "2":
-                pass
+                user_ip = input("Enter switch ip (e:exit): ")
+                if user_ip == "e":
+                    break
+                
+                while True:
+                    ia = 1
+                    os.system('cls')
+                    print(f"Current Access-List (IP: {user_ip}):")
+                    connect = self.switch_connect(user_ip)
+                    result = self.__get_switch_access_list_dict(connect)
+                    for key in result.keys():
+                        print(f"{ia:<2}. {key}")
+                        ia += 1
+                    
+                    al_hint = "\nAccess-List create hint:\n"
+                    al_hint += "Type 1:\n"
+                    al_hint += "├── access-list <name> permit 192.168.1.0 0.0.0.255\n"
+                    al_hint += "└── access-list <name> deny any\n"
+                    al_hint += "\nType 2:\n"
+                    al_hint += "├── access-list <name> permit tcp 192.168.1.0 0.0.0.255 any eq 80\n"
+                    al_hint += "└── access-list <name> deny ip any any\n"
+                    al_hint += "\nType 3:\n"
+                    al_hint += "├── ip access-list extended <name>\n"
+                    al_hint += "├── permit tcp 192.168.1.0 0.0.0.255 any eq 80\n"
+                    al_hint += "└── deny ip any any\n"
+                    al_hint += "\nType 4:\n"
+                    al_hint += "├── mac access-list extended <name>\n"
+                    al_hint += "├── permit host aaaa.bbbb.cccc any\n"
+                    al_hint += "└── deny any any\n"
+                    al_hint += "\nEnter new access-list (e:exit): "
+                    new_access_list = input(al_hint)
+                    if new_access_list == "e":
+                        break
+                    connect.send_config_set(new_access_list)
+                    
             elif user_case == "4":
                 pass
             elif user_case == "e":
