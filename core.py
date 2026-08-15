@@ -173,7 +173,7 @@ class Core:
         message += "\t4- Swtiches IPs (Get list of your IP Address in your switch)\n"
         message += "\t5- Get DNS name by IP\n"
         message += "\t6- Switch Config Manager\n"
-        message += "\t7- Access-List Manager"
+        message += "\t7- Access-List Manager\n"
         message += "\t8- Get Backup from Config/Interfaces/version/CDP details of switches\n"
         message += "\ts- Search in Switches IPs database\n"
         message += "\tc- Get CSV from database\n"
@@ -637,7 +637,7 @@ class Core:
 
         return result
 
-    def case_switch_ips(self, dns_mode):
+    def case_switch_ips(self, dns_mode) -> None:
         counter = 1
         connect_failed = 0
         switch_ips = []
@@ -731,6 +731,40 @@ class Core:
         self.cf.all_switches.clear()
         input("Press any key to exit ..")
 
+    def case_access_list_manager(self) -> None:
+        uc_msg = "Please select on of below:\n"
+        uc_msg += "1. View switch access-list and rules\n"
+        uc_msg += "2. Add switch access-list\n"
+        uc_msg += "3. Add access-list rule\n"
+        uc_msg += "4. Debug\n"
+        uc_msg += "e. Exit\n"
+        uc_msg += "Enter your choose: "
+        while True:
+            user_case = input(uc_msg)
+            if user_case == "1":
+                while True:
+                    user_ip = input("Enter switch ip (e:exit): ")
+                    print()
+                    if user_ip == "e":
+                        break
+                    connect = self.switch_connect(user_ip)
+                    result = self.__get_switch_access_list_dict(connect) 
+                    for key, values in result.items():
+                        print(key)
+                        for index, value in enumerate(values):
+                            branch = "└── " if index == len(values) - 1 else "├── "
+                            print(f"{branch}{value}")
+                        print()
+                        
+            elif user_case == "2":
+                pass
+            elif user_case == "4":
+                pass
+            elif user_case == "e":
+                break
+            else:
+                continue
+    
     def case_config_manager(self):
         """
         ### _Support Cases:_
