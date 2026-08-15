@@ -64,7 +64,7 @@ while True:
         case "7":
             # Access-List Manager
             cr.log("main[]:while:switch:case-7:core{}:core[]:coreGetSwitchesBackup()")
-            cr.coreAccessListManager()
+            cr.case_access_list_manager()
         
         case "8":
             # Case Backup
