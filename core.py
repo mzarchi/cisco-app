@@ -736,6 +736,8 @@ class Core:
         uc_msg += "1. View switch access-list and rules\n"
         uc_msg += "2. Add switch access-list\n"
         uc_msg += "3. Add access-list rule\n"
+        uc_msg += "4. Delete access-list\n"
+        uc_msg += "5. Delete access-list rule\n"
         uc_msg += "d. Debug\n"
         uc_msg += "e. Exit\n"
         uc_msg += "Enter your choose: "
@@ -793,6 +795,31 @@ class Core:
                     connect.send_config_set(new_access_list)
                     connect.save_config()
                     
+            elif user_case == "4":
+                user_ip = input("Enter switch ip (e:exit): ")
+                if user_ip == "e":
+                    break
+                
+                while True:
+                    ia = 1
+                    os.system('cls')
+                    d_acl = {}
+                    print(f"Current Access-List (IP: {user_ip}):")
+                    connect = self.switch_connect(user_ip)
+                    result = self.__get_switch_access_list_dict(connect)
+                    for key in result.keys():
+                        print(f"{ia:<2}. {key}")
+                        d_acl.update({ia:key})
+                        ia += 1
+                    user_case_delete = input("Enter number of access-list for delete (e:exit): ")
+                    if user_case_delete == "e":
+                        break
+                    user_case_delete = int(user_case_delete)
+                    user_config = self.__set_aclConfig_aclComand(d_acl[user_case_delete])
+                    connect.send_config_set(user_config)
+                    connect.save_config()
+                    
+                    
             elif user_case == "d":
                 user_ip = input("Enter switch ip (e:exit): ")
                 connect = self.switch_connect(user_ip)
@@ -803,6 +830,11 @@ class Core:
                 break
             else:
                 continue
+    
+    def __set_aclConfig_aclComand(self, sw_config):
+        sw_conf_list = sw_config.split(" ")
+        if sw_conf_list[0] == "Extended":
+            return f"no ip access-list extended {sw_conf_list[-1]}"
     
     def __get_switch_access_list_dict(self, connect):
         command_result = connect.send_command("show access-lists")
