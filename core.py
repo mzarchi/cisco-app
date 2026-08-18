@@ -3,6 +3,7 @@ from datetime import datetime
 from database import Database
 from encrypt import Encryption
 from netmiko import ConnectHandler
+from netmiko.base_connection import BaseConnection
 from netmiko.exceptions import NetmikoTimeoutException
 from concurrent.futures import ThreadPoolExecutor
 
@@ -18,6 +19,7 @@ import subprocess
 class Core:
     cf = Config()
     db = Database()
+    sw_con = {}
 
     def __init__(self):
         pass
@@ -480,6 +482,7 @@ class Core:
                     dt = self.get_datetime()
                     cd_message = "Please select one of the options below:\n"
                     cd_message += "\tcct- Config Check Template\n"
+                    cd_message += "\tpsc- Print Switches Connection (dict)\n"
                     cd_message += "\te- Exit\nPlease insert option number: "
                     while True:
                         cd_case_number = input(cd_message)
@@ -508,7 +511,7 @@ class Core:
                                         continue
                                     
                                     for i, ip in enumerate(all_ip):
-                                        connect = self.switch_connect(ip)
+                                        connect = self.__cnt(ip)
                                         if connect is None:
                                             continue
                                         
@@ -523,6 +526,10 @@ class Core:
                                         print(f"{ip:<15}: {cct_file_name}")
                                         with open(cct_file_name, "a") as file:
                                             file.write(cct_text_file)
+                            
+                            case "psc":
+                                print(self.sw_con)
+                                input("Press any key to exit")
 
         self.db.set_dict_admin_data()
 
@@ -535,8 +542,8 @@ class Core:
         counter = 1
         for ip in (Config.all_switches):
             try:
-                self.log(f"core[]:core{{}}:case_switch_scan():for:switch_connect({ip})")
-                cnt = self.switch_connect(ip)
+                self.log(f"core[]:core{{}}:case_switch_scan():for:__cnt({ip})")
+                cnt = self.__cnt(ip)
                 self.log("core[]:core{}:case_switch_scan():for:send_command(show version)")
                 version_data = cnt.send_command("show version")
                 self.log("core[]:core{}:case_switch_scan():for:find_hostname()")
@@ -597,35 +604,35 @@ class Core:
         else:
             return 0, 0, 0
 
-    def switch_connect(self, ip):
-        try:
-            auth_index = 0
-            while True:
-                try:
-                    cisco_switch = {
-                        'device_type': 'cisco_ios',
-                        'host': ip,
-                        'username': self.cf.auth_dict[auth_index]['username'],
-                        'password': self.cf.auth_dict[auth_index]['password'],
-                        'secret': self.cf.auth_dict[auth_index]['secret'],
-                    }
+    def __cnt(self, ip):
+        connect = None
+        cons = self.sw_con
+        if ip in cons.keys():
+            connect = cons[ip]
+            if connect.is_alive():
+                return connect
 
-                    connect = ConnectHandler(**cisco_switch)
-                    connect.enable()
-                    return connect
-
-                except NetmikoTimeoutException:
-                    return None
-                except Exception as e:
+        auth_index = 0
+        while True:
+            try:
+                cisco_switch = {
+                    'device_type': 'cisco_ios',
+                    'host': ip,
+                    'username': self.cf.auth_dict[auth_index]['username'],
+                    'password': self.cf.auth_dict[auth_index]['password'],
+                    'secret': self.cf.auth_dict[auth_index]['secret'],
+                }
+                
+                connect = ConnectHandler(**cisco_switch)
+                connect.enable()
+                self.sw_con.update({ip:connect})
+                return connect
+            except Exception as e:
                     if auth_index < len(self.cf.auth_dict):
                         auth_index += 1
                         continue
                     else:
                         break
-
-        except Exception as e:
-            print(f"- F-core, C-Core, D-switch_connect: {e}")
-
     def get_dns_name(self, ip):
         result = "None"
         try:
@@ -653,7 +660,7 @@ class Core:
         self.log(f"core[]:core{{}}:case_switch_ips():{dt}")
         ip_text_file = ""
         for hip in switch_ips:
-            connect = self.switch_connect(hip)
+            connect = self.__cnt(hip)
             if connect is None:
                 self.log(f"core[]:core{{}}:case_switch_ips():for:if:NoConnectivity({hip})")
                 connect_failed += 1
@@ -749,7 +756,7 @@ class Core:
                     print()
                     if user_ip == "e":
                         break
-                    connect = self.switch_connect(user_ip)
+                    connect = self.__cnt(user_ip)
                     result = self.__get_switch_access_list_dict(connect) 
                     for key, values in result.items():
                         print(key)
@@ -767,7 +774,7 @@ class Core:
                     ia = 1
                     os.system('cls')
                     print(f"Current Access-List (IP: {user_ip}):")
-                    connect = self.switch_connect(user_ip)
+                    connect = self.__cnt(user_ip)
                     result = self.__get_switch_access_list_dict(connect)
                     for key in result.keys():
                         print(f"{ia:<2}. {key}")
@@ -800,12 +807,14 @@ class Core:
                 if user_ip == "e":
                     break
                 
+                connect = None
                 while True:
                     ia = 1
                     os.system('cls')
                     d_acl = {}
                     print(f"Current Access-List (IP: {user_ip}):")
-                    connect = self.switch_connect(user_ip)
+                    if connect == None:
+                        connect = self.__cnt(user_ip)
                     result = self.__get_switch_access_list_dict(connect)
                     for key in result.keys():
                         print(f"{ia:<2}. {key}")
@@ -816,13 +825,15 @@ class Core:
                         break
                     user_case_delete = int(user_case_delete)
                     user_config = self.__set_aclConfig_aclComand(d_acl[user_case_delete])
+                    print(f"log: {user_config} is running ..")
                     connect.send_config_set(user_config)
-                    connect.save_config()
+                    print(f"log: saving switch config!")
+                    self.__save(connect)
                     
                     
             elif user_case == "d":
                 user_ip = input("Enter switch ip (e:exit): ")
-                connect = self.switch_connect(user_ip)
+                connect = self.__cnt(user_ip)
                 connect.config_mode()
                 input()
                 
@@ -831,12 +842,17 @@ class Core:
             else:
                 continue
     
+    def __save(self, connect:BaseConnection):
+        output = connect.send_command_timing("copy running-config startup-config")
+        if "Destination filename" in output:
+            output += connect.send_command_timing("\n")
+        
     def __set_aclConfig_aclComand(self, sw_config):
         sw_conf_list = sw_config.split(" ")
         if sw_conf_list[0] == "Extended":
             return f"no ip access-list extended {sw_conf_list[-1]}"
     
-    def __get_switch_access_list_dict(self, connect):
+    def __get_switch_access_list_dict(self, connect:BaseConnection):
         command_result = connect.send_command("show access-lists")
         result = {}
         current_key = None
@@ -916,7 +932,7 @@ class Core:
                         all_ip = [funcs[4]]
                         
                     for i, ip in enumerate(all_ip):
-                        connect = self.switch_connect(ip)
+                        connect = self.__cnt(ip)
                         if connect is None:
                             continue
                         
@@ -963,7 +979,7 @@ class Core:
                         all_ip = [funcs[4]]
                         
                     for i, ip in enumerate(all_ip):
-                        connect = self.switch_connect(ip)
+                        connect = self.__cnt(ip)
                         if connect is None:
                             continue
                         
@@ -1010,7 +1026,7 @@ class Core:
                         all_ip = [funcs[4]]
 
                     for i, ip in enumerate(all_ip):
-                        connect = self.switch_connect(ip)
+                        connect = self.__cnt(ip)
                         if connect is None:
                             continue
 
@@ -1042,7 +1058,7 @@ class Core:
                         all_ip = [funcs[4]]
 
                     for i, ip in enumerate(all_ip):
-                        connect = self.switch_connect(ip)
+                        connect = self.__cnt(ip)
                         if connect is None:
                             continue
 
@@ -1074,7 +1090,7 @@ class Core:
                         all_ip = [funcs[4]]
 
                     for i, ip in enumerate(all_ip):
-                        connect = self.switch_connect(ip)
+                        connect = self.__cnt(ip)
                         if connect is None:
                             continue
 
@@ -1091,7 +1107,7 @@ class Core:
                         all_ip = [funcs[4]]
 
                     for i, ip in enumerate(all_ip):
-                        connect = self.switch_connect(ip)
+                        connect = self.__cnt(ip)
                         if connect is None:
                             continue
 
