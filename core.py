@@ -506,7 +506,7 @@ class Core:
                             
                             case "psc":
                                 pprint(self.sw_con, sort_dicts=False)
-                                input("Press any key to exit")
+                                input("\nPress any key to exit ...")
 
         self.db.set_dict_admin_data()
 
@@ -588,6 +588,8 @@ class Core:
             connect = cons[ip]
             if connect.is_alive():
                 return connect
+            else:
+                cons.pop(ip)
 
         auth_index = 0
         while True:
@@ -638,69 +640,71 @@ class Core:
         self.log(f"core[]:core{{}}:case_switch_ips():{dt}")
         ip_text_file = ""
         for hip in switch_ips:
-            connect = self.__cnt(hip)
-            if connect is None:
-                self.log(f"core[]:core{{}}:case_switch_ips():for:if:NoConnectivity({hip})")
-                connect_failed += 1
-                if connect_failed == 3:
-                    self.log(f"core[]:core{{}}:case_switch_ips():for:if:if:StopConnectToSwitches")
-                    print(f"--- - IP: {hip:<18} You can't connect to switch!")
-                    break
-                else:
-                    self.log(f"core[]:core{{}}:case_switch_ips():for:if:else:GoToNextSwitchIP")
-                    continue
+            try:
+                connect = self.__cnt(hip)
+                if connect is None:
+                    self.log(f"core[]:core{{}}:case_switch_ips():for:if:NoConnectivity({hip})")
+                    connect_failed += 1
+                    if connect_failed == 3:
+                        self.log(f"core[]:core{{}}:case_switch_ips():for:if:if:StopConnectToSwitches")
+                        print(f"--- - IP: {hip:<18} You can't connect to switch!")
+                        break
+                    else:
+                        self.log(f"core[]:core{{}}:case_switch_ips():for:if:else:GoToNextSwitchIP")
+                        continue
 
-            self.log(f"core[]:core{{}}:case_switch_ips():for:Connectivity({hip})")
-            connect_failed = 0
-            self.log("core[]:core{}:case_switch_ips():for:send_command(show ip device tracking all)")
-            sidta = connect.send_command("show ip device tracking all")
-            if "%" in sidta:
-                self.log("core[]:core{}:case_switch_ips():for:if:send_command(show ip device tracking all)")
-                sidta = connect.send_command("show device-tracking database")
+                self.log(f"core[]:core{{}}:case_switch_ips():for:Connectivity({hip})")
+                connect_failed = 0
+                self.log("core[]:core{}:case_switch_ips():for:send_command(show ip device tracking all)")
+                sidta = connect.send_command("show ip device tracking all")
+                if "%" in sidta:
+                    self.log("core[]:core{}:case_switch_ips():for:if:send_command(show ip device tracking all)")
+                    sidta = connect.send_command("show device-tracking database")
 
-            pattern = re.compile(
-                r"(\d+\.\d+\.\d+\.\d+)"
-                r".*?"
-                r"([0-9A-Fa-f]{4}(?:\.[0-9A-Fa-f]{4}){2})"
-                r".*?"
-                r"(\S*\/\S*)"
-            )
-            
-            date_time = f"{dt['unix']}"
-            actives = ["ACTIVE", "Active", "active", "REACHABLE", "Reachable", "reachable"]
-            for line in sidta.splitlines():
-                if any(state in line.split() for state in actives):
-                    match = pattern.search(line)
-                    if match:
-                        ip, mac, port = match.groups()
-                        if dns_mode:
-                            dns_name = self.get_dns_name(ip)
-                            imsp = f"{dns_name}|{hip}|{port}"
-                            self.log("core[]:core{}:case_switch_ips():for:for:if:if:if:App_DB{}.insert_dnsdata(imsp, date_time)")
-                            new_imsp = self.db.insert_dnsdata(imsp, date_time)
-                            imsp_sec = "Update"
-                            if new_imsp:
-                                imsp_sec = "Insert (New!)"
-                                
-                            if dns_name != "---------------":
-                                dns_i += 1
-                                line = f"({counter:<3}, {dns_i:<3}) - IP: {ip:<18} Switch: {hip:<18} Port: {port:<25} PC-Name: {dns_name:<30} Action: {imsp_sec}"
+                pattern = re.compile(
+                    r"(\d+\.\d+\.\d+\.\d+)"
+                    r".*?"
+                    r"([0-9A-Fa-f]{4}(?:\.[0-9A-Fa-f]{4}){2})"
+                    r".*?"
+                    r"(\S*\/\S*)"
+                )
+                
+                date_time = f"{dt['unix']}"
+                actives = ["ACTIVE", "Active", "active", "REACHABLE", "Reachable", "reachable"]
+                for line in sidta.splitlines():
+                    if any(state in line.split() for state in actives):
+                        match = pattern.search(line)
+                        if match:
+                            ip, mac, port = match.groups()
+                            if dns_mode:
+                                dns_name = self.get_dns_name(ip)
+                                imsp = f"{dns_name}|{hip}|{port}"
+                                self.log("core[]:core{}:case_switch_ips():for:for:if:if:if:App_DB{}.insert_dnsdata(imsp, date_time)")
+                                new_imsp = self.db.insert_dnsdata(imsp, date_time)
+                                imsp_sec = "Update"
+                                if new_imsp:
+                                    imsp_sec = "Insert (New!)"
+                                    
+                                if dns_name != "---------------":
+                                    dns_i += 1
+                                    line = f"({counter:<3}, {dns_i:<3}) - IP: {ip:<18} Switch: {hip:<18} Port: {port:<25} PC-Name: {dns_name:<30} Action: {imsp_sec}"
+                                else:
+                                    line = f"({counter:<3}, ---) - IP: {ip:<18} Switch: {hip:<18} Port: {port:<25} PC-Name: {dns_name:<30} Action: {imsp_sec}"
+                                    
+                                ip_text_file += f"{line}\n"
+                                print(line)
+                                counter += 1
+
                             else:
-                                line = f"({counter:<3}, ---) - IP: {ip:<18} Switch: {hip:<18} Port: {port:<25} PC-Name: {dns_name:<30} Action: {imsp_sec}"
-                                
-                            ip_text_file += f"{line}\n"
-                            print(line)
-                            counter += 1
-
-                        else:
-                            imsp = f"{ip}|{mac}|{hip}|{port}"
-                            self.log(f"core[]:core{{}}:case_switch_ips():for:for:if:if:else:App_DB{{}}.insert_ipdata({imsp}, {date_time}, {dt['dati']})")
-                            ready_data.update({ip:imsp})
-                            #new_imsp = self.db.insert_ipdata(imsp, date_time, dt['dati'])
-                            line = f"{counter:<4}- IP: {ip:<18} MAC: {mac:<18} Switch: {hip:<18} Port: {port:<25}"
-                            ip_text_file += f"{line}\n"
-                            print(line)
-                            counter += 1
+                                imsp = f"{ip}|{mac}|{hip}|{port}"
+                                self.log(f"core[]:core{{}}:case_switch_ips():for:for:if:if:else:App_DB{{}}.insert_ipdata({imsp}, {date_time}, {dt['dati']})")
+                                ready_data.update({ip:imsp})
+                                line = f"{counter:<4}- IP: {ip:<18} MAC: {mac:<18} Switch: {hip:<18} Port: {port:<25}"
+                                ip_text_file += f"{line}\n"
+                                print(line)
+                                counter += 1
+            except Exception as e:
+                pass
 
         if dns_mode == False:
             self.db.insert_ipdata(ready_data, date_time, dt['dati'])
