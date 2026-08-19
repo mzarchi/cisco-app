@@ -14,9 +14,6 @@ cf = Config()
 db = Database()
 cr = Core()
 
-ip_refresh_worker = PeriodicWorker(task=cr.switch_ips_worker, interval=60)
-ip_refresh_worker.start()
-
 cr.log("main[]:main():Start-app", nl=True)
 cr.log("main[]:core[]:Core{}:show_banner()")
 cr.show_banner()
@@ -26,6 +23,10 @@ cr.log("main[]:core[]:App_DB{}:set_dict_admin_data()")
 db.set_dict_admin_data()
 cr.log("main[]:core[]:App_DB{}:set_dict_ipsubnet_data()")
 db.set_dict_ipsubnet_data()
+
+ip_refresh_worker = PeriodicWorker(task=cr.switch_ips_worker, interval=120, run_immediately=True)
+ip_refresh_worker.start()
+
 switch = 0
 while True:
     cr.log("main[]:while:switch:show_menu()")
