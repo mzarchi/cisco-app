@@ -624,6 +624,7 @@ class Core:
     def case_switch_ips(self, dns_mode=False) -> None:
         counter = 1
         connect_failed = 0
+        ready_data = {}
         switch_ips = []
         user_special_ip = input("Enter Special Switch IP or Enter: ")
         if user_special_ip == "":
@@ -694,16 +695,15 @@ class Core:
                         else:
                             imsp = f"{ip}|{mac}|{hip}|{port}"
                             self.log(f"core[]:core{{}}:case_switch_ips():for:for:if:if:else:App_DB{{}}.insert_ipdata({imsp}, {date_time}, {dt['dati']})")
-                            new_imsp = self.db.insert_ipdata(imsp, date_time, dt['dati'])
-                            imsp_sec = "Update"
-                            if new_imsp:
-                                imsp_sec = "Insert (New!)"
-
-                            line = f"{counter:<4}- IP: {ip:<18} MAC: {mac:<18} Switch: {hip:<18} Port: {port:<25} Action: {imsp_sec}"
+                            ready_data.update({ip:imsp})
+                            #new_imsp = self.db.insert_ipdata(imsp, date_time, dt['dati'])
+                            line = f"{counter:<4}- IP: {ip:<18} MAC: {mac:<18} Switch: {hip:<18} Port: {port:<25}"
                             ip_text_file += f"{line}\n"
                             print(line)
                             counter += 1
 
+        if dns_mode == False:
+            self.db.insert_ipdata(ready_data, date_time, dt['dati'])
         if connect_failed < 3:
             self.log("core[]:core{}:case_switch_ips():for:for:CreateFile:IP-List.txt")
             if dns_mode:
@@ -718,6 +718,7 @@ class Core:
     def switch_ips_worker(self) -> None:
         counter = 1
         connect_failed = 0
+        ready_data = {}
         switch_ips = []
         self.scan_network()
         switch_ips = self.cf.all_switches
@@ -760,10 +761,12 @@ class Core:
                     if match:
                         ip, mac, port = match.groups()
                         imsp = f"{ip}|{mac}|{hip}|{port}"
+                        ready_data.update({ip:imsp})
                         self.log(f"core[]:core{{}}:case_switch_ips():for:for:if:if:else:App_DB{{}}.insert_ipdata({imsp}, {date_time}, {dt['dati']})")
-                        self.db.insert_ipdata(imsp, date_time, dt['dati'])
+                        #self.db.insert_ipdata(imsp, date_time, dt['dati'])
                         counter += 1
-
+                        
+        self.db.insert_ipdata(ready_data, date_time, dt['dati'])
         if connect_failed < 3:
             self.log("core[]:core{}:case_switch_ips():for:for:CreateFile:IP-List.txt")
         self.cf.all_switches.clear()
