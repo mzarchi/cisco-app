@@ -2,9 +2,9 @@ from config import Config
 from datetime import datetime
 from database import Database
 from encrypt import Encryption
+from pprint import pprint
 from netmiko import ConnectHandler
 from netmiko.base_connection import BaseConnection
-from netmiko.exceptions import NetmikoTimeoutException
 from concurrent.futures import ThreadPoolExecutor
 
 import os
@@ -505,7 +505,7 @@ class Core:
                                             file.write(cct_text_file)
                             
                             case "psc":
-                                print(self.sw_con)
+                                pprint(self.sw_con, sort_dicts=False)
                                 input("Press any key to exit")
 
         self.db.set_dict_admin_data()
@@ -621,7 +621,7 @@ class Core:
 
         return result
 
-    def case_switch_ips(self, dns_mode) -> None:
+    def case_switch_ips(self, dns_mode=False) -> None:
         counter = 1
         connect_failed = 0
         switch_ips = []
@@ -715,6 +715,59 @@ class Core:
         self.cf.all_switches.clear()
         input("Press any key to exit ..")
 
+    def switch_ips_worker(self) -> None:
+        counter = 1
+        connect_failed = 0
+        switch_ips = []
+        self.scan_network()
+        switch_ips = self.cf.all_switches
+
+        dt = self.get_datetime()
+        self.log(f"core[]:core{{}}:switch_ips_worker():{dt}")
+        for hip in switch_ips:
+            connect = self.__cnt(hip)
+            if connect is None:
+                self.log(f"core[]:core{{}}:switch_ips_worker():for:if:NoConnectivity({hip})")
+                connect_failed += 1
+                if connect_failed == 3:
+                    self.log(f"core[]:core{{}}:switch_ips_worker():for:if:if:StopConnectToSwitches")
+                    break
+                else:
+                    self.log(f"core[]:core{{}}:switch_ips_worker():for:if:else:GoToNextSwitchIP")
+                    continue
+
+            self.log(f"core[]:core{{}}:switch_ips_worker():for:Connectivity({hip})")
+            connect_failed = 0
+            self.log("core[]:core{}:switch_ips_worker():for:send_command(show ip device tracking all)")
+            sidta = connect.send_command("show ip device tracking all")
+            if "%" in sidta:
+                self.log("core[]:core{}:switch_ips_worker():for:if:send_command(show ip device tracking all)")
+                sidta = connect.send_command("show device-tracking database")
+
+            pattern = re.compile(
+                r"(\d+\.\d+\.\d+\.\d+)"
+                r".*?"
+                r"([0-9A-Fa-f]{4}(?:\.[0-9A-Fa-f]{4}){2})"
+                r".*?"
+                r"(\S*\/\S*)"
+            )
+            
+            date_time = f"{dt['unix']}"
+            actives = ["ACTIVE", "Active", "active", "REACHABLE", "Reachable", "reachable"]
+            for line in sidta.splitlines():
+                if any(state in line.split() for state in actives):
+                    match = pattern.search(line)
+                    if match:
+                        ip, mac, port = match.groups()
+                        imsp = f"{ip}|{mac}|{hip}|{port}"
+                        self.log(f"core[]:core{{}}:case_switch_ips():for:for:if:if:else:App_DB{{}}.insert_ipdata({imsp}, {date_time}, {dt['dati']})")
+                        self.db.insert_ipdata(imsp, date_time, dt['dati'])
+                        counter += 1
+
+        if connect_failed < 3:
+            self.log("core[]:core{}:case_switch_ips():for:for:CreateFile:IP-List.txt")
+        self.cf.all_switches.clear()
+        
     def case_access_list_manager(self) -> None:
         uc_msg = "Please select on of below:\n"
         uc_msg += "1. View switch access-list and rules\n"
