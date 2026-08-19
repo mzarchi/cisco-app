@@ -327,25 +327,23 @@ class Database:
             print(f"- F-core, C-App_DB, D-del_ipsubnet_data: {e}")
             sys.exit(1)
 
-    def insert_ipdata(self, imsp, date_time, edit_field):
+    def insert_ipdata(self, data:dict, date_time, edit_field):
         try:
-            new_imsp = False
             self.__open()
-            self.cursor.execute("SELECT * FROM ip_data WHERE imsp = ?", (imsp,))
-            row = self.cursor.fetchone()
+            for imsp in data.values():
+                self.cursor.execute("SELECT * FROM ip_data WHERE imsp = ?", (imsp,))
+                row = self.cursor.fetchone()
 
-            if not row:
-                new_imsp = True
-                self.cursor.execute("INSERT INTO ip_data (imsp, insert_date, update_date, edit_field) VALUES (?, ?, ?, ?)", (imsp, date_time, date_time, edit_field,))
-            else:
-                self.cursor.execute("UPDATE ip_data SET update_date = ?, edit_field = ? WHERE imsp = ?", (date_time, edit_field, imsp,))
+                if not row:
+                    self.cursor.execute("INSERT INTO ip_data (imsp, insert_date, update_date, edit_field) VALUES (?, ?, ?, ?)", (imsp, date_time, date_time, edit_field,))
+                else:
+                    self.cursor.execute("UPDATE ip_data SET update_date = ?, edit_field = ? WHERE imsp = ?", (date_time, edit_field, imsp,))
 
             self.__close()
-            return new_imsp
         except Exception as e:
-            print(f"- F-core, C-App_DB, D-insert_ipdata: {e}")
+            print(f"- F-core, C-App_DB, D-insert_ipdata_worker: {e}")
             sys.exit(1)
-
+            
     def insert_dnsdata(self, imsp, date_time):
         try:
             new_imsp = False
