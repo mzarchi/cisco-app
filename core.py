@@ -246,30 +246,7 @@ class Core:
         dt = self.get_datetime()
 
         for i, ip in enumerate(switches):
-            connect = None
-            auth_index = 0
-            while True:
-                try:
-                    cisco_switch = {
-                        'device_type': 'cisco_ios',
-                        'host': ip,
-                        'username': self.cf.auth_dict[auth_index]['username'],
-                        'password': self.cf.auth_dict[auth_index]['password'],
-                        'secret': self.cf.auth_dict[auth_index]['secret'],
-                    }
-
-                    self.log(f"core[]:core{{}}:case_switch_link():for:while:ConnectHandler({ip})")
-                    connect = ConnectHandler(**cisco_switch)
-                    connect.enable()
-                    break
-
-                except Exception as e:
-                    if auth_index < len(self.cf.auth_dict):
-                        auth_index += 1
-                        continue
-                    else:
-                        break
-
+            connect = self.__cnt(ip)
             if connect != None:
                 try:
                     self.log("core[]:core{}:case_switch_link():for:while:if:send_command(show version)")
@@ -1195,30 +1172,7 @@ class Core:
         dt = self.get_datetime()
         counter = 1
         for ip in switches:
-            connect = None
-            auth_index = 0
-            while True:
-                try:
-                    cisco_switch = {
-                        'device_type': 'cisco_ios',
-                        'host': ip,
-                        'username': self.cf.auth_dict[auth_index]['username'],
-                        'password': self.cf.auth_dict[auth_index]['password'],
-                        'secret': self.cf.auth_dict[auth_index]['secret'],
-                    }
-
-                    self.log(f"core[]:core{{}}:coreGetSwitchesBackup():for:while:ConnectHandler({ip})")
-                    connect = ConnectHandler(**cisco_switch)
-                    connect.enable()
-                    break
-
-                except Exception as e:
-                    if auth_index < len(self.cf.auth_dict):
-                        auth_index += 1
-                        continue
-                    else:
-                        break
-
+            connect = self.__cnt(ip)
             if connect != None:
                 try:
                     self.log("core[]:core{}:coreGetSwitchesBackup():for:while:if:send_command(show version)")
