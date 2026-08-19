@@ -1,15 +1,21 @@
 from config import Config
 from database import Database
 from core import Core
+from PeriodicWorker import PeriodicWorker
+
 
 import ctypes
 import time
+
 
 ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp vG132-2608")
 
 cf = Config()
 db = Database()
 cr = Core()
+
+ip_refresh_worker = PeriodicWorker(task=cr.switch_ips_worker, interval=60)
+ip_refresh_worker.start()
 
 cr.log("main[]:main():Start-app", nl=True)
 cr.log("main[]:core[]:Core{}:show_banner()")
@@ -49,7 +55,7 @@ while True:
         case "4":
             # Swtiches IPs (Get list of your IP Address in your switch)
             cr.log("main[]:while:switch:case-4:core{}:core[]:case_switch_ips()")
-            cr.case_switch_ips(dns_mode=False)
+            cr.case_switch_ips()
             
         case "5":
             # Get DNS name by IP
