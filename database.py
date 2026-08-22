@@ -93,11 +93,46 @@ class Database:
                                     insert_date TEXT NOT NULL,
                                     update_date TEXT NOT NULL)
                                 """)
+            
+            self.cursor.execute("""
+                                CREATE TABLE IF NOT EXISTS app_variables (
+                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    interval_switch_ip TEXT NOT NULL)
+                                """)
             self.__close()
+            
+            self.init_app_variables()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-create_tables: {e}")
             sys.exit(1)
 
+    def init_app_variables(self):
+        self.__open()
+        self.cursor.execute("SELECT * FROM app_variables")
+        row = self.cursor.fetchone()
+        if not row:
+            #self.cursor.execute("INSERT INTO app_variables (interval_switch_ip) VALUES (?)", ("300"))
+            self.cursor.execute("""INSERT INTO app_variables (interval_switch_ip) VALUES (?)""", ("300",))
+        self.__close()
+            
+    def get_app_variables(self):
+        try:
+            self.__open()
+            self.cursor.execute("SELECT * FROM app_variables WHERE id = 1")
+            row = self.cursor.fetchone()
+            self.__close()
+            return row
+        except Exception as e:
+            pass
+        
+    def set_app_variables(self, value):
+        try:
+            self.__open()
+            self.cursor.execute("UPDATE app_variables SET interval_switch_ip = ? WHERE id = 1", (value,))
+            self.__close()
+        except Exception as e:
+            pass
+        
     def count_user(self):
         try:
             self.__open()
