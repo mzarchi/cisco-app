@@ -309,6 +309,7 @@ class Core:
         result.update({"log": now.strftime("%H:%M:%S")})
         result.update({"backup": now.strftime("%Y-%m-%d")})
         result.update({"dati": now.strftime("%Y-%m-%d %H%M%S")})
+        result.update({"psc": now.strftime("%Y-%m-%d %H:%M:%S")})
         result.update({"unix": str(int(now.timestamp()))})
         return result
 
@@ -327,6 +328,7 @@ class Core:
         message = "Please select one of the options below:\n"
         message += "\t1- Add/Remove SSH data\n"
         message += "\t2- Add/Remove SSH user login\n"
+        message += "\t3- Set switch_ips_worker Interval\n"
         message += "\td- Debug Mode (Safe for user)\n"
         message += "\te- Exit from Settings\nPlease insert option number: "
 
@@ -452,6 +454,13 @@ class Core:
                                 self.db.del_admin_data(en.encode(c3_username))
 
                     self.log("core[]:core{}:app_settings_handler():case_number-2:c2_case_number-3:App_DB{}:set_dict_admin_data()")
+                
+                case "3":
+                    self.log("core[]:core{}:app_settings_handler():case_number-3")
+                    data = self.db.get_app_variables()
+                    new_value = input(f"Enter a switch_ips_worker interval (current:{data[1]}s, e:exit): ")
+                    if new_value != "e":
+                        self.db.set_app_variables(new_value)
                     
                 case "d":
                     self.log("core[]:core{}:app_settings_handler():case_number-d")
@@ -505,7 +514,8 @@ class Core:
                                             file.write(cct_text_file)
                             
                             case "psc":
-                                pprint(self.sw_con, sort_dicts=False)
+                                for ip in self.sw_con.keys():
+                                    print(f"{ip:<15}, obj: {self.sw_con[ip]['obj']}, create: {self.sw_con[ip]['created']}, used: {self.sw_con[ip]['used']}")
                                 input("\nPress any key to exit ...")
 
         self.db.set_dict_admin_data()
@@ -584,9 +594,12 @@ class Core:
     def __cnt(self, ip):
         connect = None
         cons = self.sw_con
+        dt = self.get_datetime()
+        date_time = f"{dt['psc']}"
         if ip in cons.keys():
-            connect = cons[ip]
+            connect = cons[ip]['obj']
             if connect.is_alive():
+                cons[ip]['used'] = date_time
                 return connect
             else:
                 cons.pop(ip)
@@ -604,7 +617,7 @@ class Core:
                 
                 connect = ConnectHandler(**cisco_switch)
                 connect.enable()
-                self.sw_con.update({ip:connect})
+                self.sw_con.update({ip : {"obj": connect, "created" : date_time, "used" : date_time}})
                 return connect
             except Exception as e:
                     if auth_index < len(self.cf.auth_dict):
@@ -637,6 +650,7 @@ class Core:
 
         dns_i = 0
         dt = self.get_datetime()
+        date_time = f"{dt['unix']}"
         self.log(f"core[]:core{{}}:case_switch_ips():{dt}")
         ip_text_file = ""
         for hip in switch_ips:
@@ -669,7 +683,7 @@ class Core:
                     r"(\S*\/\S*)"
                 )
                 
-                date_time = f"{dt['unix']}"
+                #date_time = f"{dt['unix']}"
                 actives = ["ACTIVE", "Active", "active", "REACHABLE", "Reachable", "reachable"]
                 for line in sidta.splitlines():
                     if any(state in line.split() for state in actives):
