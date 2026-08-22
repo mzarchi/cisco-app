@@ -13,7 +13,7 @@ ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp vG132-2608")
 cf = Config()
 db = Database()
 cr = Core()
-
+switch_ips_worker_interval = db.get_app_variables()[1]
 cr.log("main[]:main():Start-app", nl=True)
 cr.log("main[]:core[]:Core{}:show_banner()")
 cr.show_banner()
@@ -24,7 +24,7 @@ db.set_dict_admin_data()
 cr.log("main[]:core[]:App_DB{}:set_dict_ipsubnet_data()")
 db.set_dict_ipsubnet_data()
 
-ip_refresh_worker = PeriodicWorker(task=cr.switch_ips_worker, interval=120, run_immediately=True)
+ip_refresh_worker = PeriodicWorker(task=cr.switch_ips_worker, interval=int(switch_ips_worker_interval), run_immediately=True)
 ip_refresh_worker.start()
 
 switch = 0
