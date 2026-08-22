@@ -6,8 +6,8 @@ from pathlib import Path
 from threading import Lock
 from time import perf_counter
 from typing import Any
-
 from config import Config
+import inspect
 
 cf = Config()
 _log_lock = Lock()
@@ -62,27 +62,29 @@ def method_logger(func: Callable[..., Any]) -> Callable[..., Any]:
     return wrapper
 
 
-@contextmanager
-def step_logger(step_name: str) -> Iterator[None]:
-    started_at = perf_counter()
-    error_message = ""
+def lg(step_name: str, error_message: str = "") -> None: # Line Logger, maybe i am mhz ?! :)
+    caller_frame = inspect.currentframe().f_back
 
     try:
-        yield
-    except Exception as error:
-        error_message = f"{type(error).__name__}: {error}"
-        raise
-    finally:
-        finished_at = datetime.now()
-        elapsed = perf_counter() - started_at
-        formatted_name = f"-> {step_name}"[:30]
+        class_name = ""
+        self_object = caller_frame.f_locals.get("self")
+        if self_object is not None:
+            class_name = f"{self_object.__class__.__name__}."
 
+        function_name = caller_frame.f_code.co_name
+        line_number = caller_frame.f_lineno
+        step_id = f"{class_name}{function_name}():L{line_number} {step_name}"
+        step_id = step_id[:30]
+        now = datetime.now()
         log_text = (
-            f"{finished_at:%Y-%m-%d} | "
-            f"{finished_at:%H:%M:%S} | "
-            f"{formatted_name:<30} | "
-            f"{elapsed:08.3f} | "
+            f"{now:%Y-%m-%d} | "
+            f"{now:%H:%M:%S} | "
+            f"{step_id:<30} | "
+            f"0000.000 | "
             f"E: {error_message}"
         )
 
         append_log(log_text)
+
+    finally:
+        del caller_frame
