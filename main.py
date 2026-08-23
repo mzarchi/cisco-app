@@ -2,7 +2,7 @@ from config import Config
 from database import Database
 from core import Core
 from PeriodicWorker import PeriodicWorker
-
+from decorators import method_logger, lg
 
 import ctypes
 import time
@@ -14,87 +14,56 @@ cf = Config()
 db = Database()
 cr = Core()
 switch_ips_worker_interval = db.get_app_variables()[1]
-cr.log("main[]:main():Start-app", nl=True)
-cr.log("main[]:core[]:Core{}:show_banner()")
 cr.show_banner()
 
 time.sleep(2)
-cr.log("main[]:core[]:App_DB{}:set_dict_admin_data()")
 db.set_dict_admin_data()
-cr.log("main[]:core[]:App_DB{}:set_dict_ipsubnet_data()")
 db.set_dict_ipsubnet_data()
-
+cr.scan_network()
 ip_refresh_worker = PeriodicWorker(task=cr.switch_ips_worker, interval=int(switch_ips_worker_interval), run_immediately=True)
 ip_refresh_worker.start()
 
 switch = 0
 while True:
-    cr.log("main[]:while:switch:show_menu()")
     switch = input(cr.show_menu())
-    cr.log("main[]:while:switch:input(switch)")
     match switch:
         case "0":
-            # App Settings (Edit all app settings)
-            cr.log("main[]:while:switch:case-0:core{}:core[]:app_settings_handler()")
             cr.app_settings_handler()
 
         case "1":
-            ip_range = input("Insert your ip: ")
-            cr.log("main[]:while:switch:case-1:core{}:core[]:case_ip_scanner()")
-            cr.case_ip_scanner(ip_range)
+            cr.case_ip_scanner()
 
         case "2":
-            # Switch Scan (Get list of your switches)
-            cr.log("main[]:while:switch:case-2:core{}:core[]:case_switch_scan()")
             cr.case_switch_scan()
 
         case "3":
-            # Switches Link (Get uplink of your switches)
-            cr.log("main[]:while:switch:case-3:core{}:core[]:case_switch_link()")
             cr.case_switch_link()
 
         case "4":
-            # Swtiches IPs (Get list of your IP Address in your switch)
-            cr.log("main[]:while:switch:case-4:core{}:core[]:case_switch_ips()")
             cr.case_switch_ips()
-            
+
         case "5":
-            # Get DNS name by IP
-            cr.log("main[]:while:switch:case-5:core{}:core[]:case_switch_ips(dns_mode)")
             cr.case_switch_ips(dns_mode=True)
 
         case "6":
-            # Switch Config Manager
-            cr.log("main[]:while:switch:case-6:core{}:core[]:case_config_manager()")
             cr.case_config_manager()
-        
+
         case "7":
-            # Access-List Manager
-            cr.log("main[]:while:switch:case-7:core{}:core[]:coreGetSwitchesBackup()")
             cr.case_access_list_manager()
-        
+
         case "8":
-            # Case Backup
-            cr.log("main[]:while:switch:case-7:core{}:core[]:coreGetSwitchesBackup()")
             cr.coreGetSwitchesBackup()
 
         case "s":
-            # Search in Switches IPs database
-            cr.log("main[]:while:switch:case-c:core{}:core[]:coreSearchSwitchesIPsDatabase()")
             cr.coreSearchSwitchesIPsDatabase()
-            
+
         case "c":
-            # Get CSV from database
-            cr.log("main[]:while:switch:case-c:core{}:core[]:coreCreateExportCsvFile()")
             cr.coreCreateExportCsvFile()
-            
+
         case "r":
-            # Run SQL query on database
-            cr.log("main[]:while:switch:case-c:core{}:core[]:coreRunSqlQuery()")
             cr.coreRunSqlQuery()
 
         case "e":
-            cr.log("main[]:while:switch:case-e:ter_cls()")
             cr.ter_cls()
             break
 
