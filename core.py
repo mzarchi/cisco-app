@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 import os
 import re
 import csv
+import time
 import socket
 import getpass
 import platform
@@ -761,98 +762,196 @@ class Core:
         uc_msg += "Enter your choose: "
         while True:
             user_case = input(uc_msg)
-            if user_case == "1":
-                while True:
+            match user_case:
+                case "1":
+                    while True:
+                        user_ip = input("Enter switch ip (e:exit): ")
+                        print()
+                        if user_ip == "e":
+                            break
+                        connect = self.__cnt(user_ip)
+                        result = self.__get_switch_access_list_dict(connect) 
+                        for key, values in result.items():
+                            print(key)
+                            for index, value in enumerate(values):
+                                branch = "└── " if index == len(values) - 1 else "├── "
+                                print(f"{branch}{value}")
+                            print()
+
+                case "2":
                     user_ip = input("Enter switch ip (e:exit): ")
-                    print()
                     if user_ip == "e":
                         break
-                    connect = self.__cnt(user_ip)
-                    result = self.__get_switch_access_list_dict(connect) 
-                    for key, values in result.items():
-                        print(key)
-                        for index, value in enumerate(values):
-                            branch = "└── " if index == len(values) - 1 else "├── "
-                            print(f"{branch}{value}")
-                        print()
-                        
-            elif user_case == "2":
-                user_ip = input("Enter switch ip (e:exit): ")
-                if user_ip == "e":
-                    break
-                
-                while True:
-                    ia = 1
-                    os.system('cls')
-                    print(f"Current Access-List (IP: {user_ip}):")
-                    connect = self.__cnt(user_ip)
-                    result = self.__get_switch_access_list_dict(connect)
-                    for key in result.keys():
-                        print(f"{ia:<2}. {key}")
-                        ia += 1
                     
-                    al_hint = "\nAccess-List create hint:\n"
-                    al_hint += "Type 1:\n"
-                    al_hint += "├── access-list <name> permit 192.168.1.0 0.0.0.255\n"
-                    al_hint += "└── access-list <name> deny any\n"
-                    al_hint += "\nType 2:\n"
-                    al_hint += "├── access-list <name> permit tcp 192.168.1.0 0.0.0.255 any eq 80\n"
-                    al_hint += "└── access-list <name> deny ip any any\n"
-                    al_hint += "\nType 3:\n"
-                    al_hint += "├── ip access-list extended <name>\n"
-                    al_hint += "├── permit tcp 192.168.1.0 0.0.0.255 any eq 80\n"
-                    al_hint += "└── deny ip any any\n"
-                    al_hint += "\nType 4:\n"
-                    al_hint += "├── mac access-list extended <name>\n"
-                    al_hint += "├── permit host aaaa.bbbb.cccc any\n"
-                    al_hint += "└── deny any any\n"
-                    al_hint += "\nEnter new access-list (e:exit): "
-                    new_access_list = input(al_hint)
-                    if new_access_list == "e":
-                        break
-                    connect.send_config_set(new_access_list)
-                    connect.save_config()
-                    
-            elif user_case == "4":
-                user_ip = input("Enter switch ip (e:exit): ")
-                if user_ip == "e":
-                    break
-                
-                connect = None
-                while True:
-                    ia = 1
-                    os.system('cls')
-                    d_acl = {}
-                    print(f"Current Access-List (IP: {user_ip}):")
-                    if connect == None:
+                    while True:
+                        ia = 1
+                        os.system('cls')
+                        print(f"Current Access-List (IP: {user_ip}):")
                         connect = self.__cnt(user_ip)
+                        result = self.__get_switch_access_list_dict(connect)
+                        for key in result.keys():
+                            print(f"{ia:<2}. {key}")
+                            ia += 1
+
+                        al_hint = "\nAccess-List create hint:\n"
+                        al_hint += "Type 1:\n"
+                        al_hint += "├── access-list <name> permit 192.168.1.0 0.0.0.255\n"
+                        al_hint += "└── access-list <name> deny any\n"
+                        al_hint += "\nType 2:\n"
+                        al_hint += "├── access-list <name> permit tcp 192.168.1.0 0.0.0.255 any eq 80\n"
+                        al_hint += "└── access-list <name> deny ip any any\n"
+                        al_hint += "\nType 3:\n"
+                        al_hint += "├── ip access-list extended <name>\n"
+                        al_hint += "├── permit tcp 192.168.1.0 0.0.0.255 any eq 80\n"
+                        al_hint += "└── deny ip any any\n"
+                        al_hint += "\nType 4:\n"
+                        al_hint += "├── mac access-list extended <name>\n"
+                        al_hint += "├── permit host aaaa.bbbb.cccc any\n"
+                        al_hint += "└── deny any any\n"
+                        al_hint += "\nEnter new access-list (e:exit): "
+                        new_access_list = input(al_hint)
+                        if new_access_list == "e":
+                            break
+                        connect.send_config_set(new_access_list)
+                        connect.save_config()
+                        
+                case "3":
+                    user_ip = input("Enter switch ip (e:exit): ")
+                    if user_ip == "e":
+                        break
+                    
+                    connect = self.__cnt(user_ip)
                     result = self.__get_switch_access_list_dict(connect)
+
+                    print(f"Current Access-List (IP: {user_ip}):")
+                    d_acl = {}
+                    ia = 1
                     for key in result.keys():
                         print(f"{ia:<2}. {key}")
-                        d_acl.update({ia:key})
+                        d_acl[ia] = key
                         ia += 1
-                    user_case_delete = input("Enter number of access-list for delete (e:exit): ")
-                    if user_case_delete == "e":
-                        break
-                    user_case_delete = int(user_case_delete)
-                    user_config = self.__set_aclConfig_aclComand(d_acl[user_case_delete])
-                    print(f"log: {user_config} is running ..")
-                    connect.send_config_set(user_config)
-                    print(f"log: saving switch config!")
+
+                    try:
+                        acl_num = int(input("Choose access-list number: "))
+                    except ValueError:
+                        print("Your number is invalid!")
+                        continue
+                    
+                    if acl_num not in d_acl:
+                        print("Your acl not in switch")
+                        continue
+                    
+                    acl_name = d_acl[acl_num]
+
+                    print("\nEnter rule to add below this ACL.")
+                    print("Example:")
+                    print("permit tcp any any eq 80")
+                    print("deny ip any any")
+                    rule = input("Enter rule: ")
+
+                    config_commands = [f"ip access-list extended {acl_name}",rule]
+                    connect.send_config_set(config_commands)
                     self.__save(connect)
-                    
-                    
-            elif user_case == "d":
-                user_ip = input("Enter switch ip (e:exit): ")
-                connect = self.__cnt(user_ip)
-                connect.config_mode()
-                input()
                 
-            elif user_case == "e":
-                break
-            else:
-                continue
-    
+                case "4":
+                    user_ip = input("Enter switch ip (e:exit): ")
+                    if user_ip == "e":
+                        break
+                    
+                    connect = None
+                    while True:
+                        ia = 1
+                        os.system('cls')
+                        d_acl = {}
+                        print(f"Current Access-List (IP: {user_ip}):")
+                        if connect == None:
+                            connect = self.__cnt(user_ip)
+                        result = self.__get_switch_access_list_dict(connect)
+                        for key in result.keys():
+                            print(f"{ia:<2}. {key}")
+                            d_acl.update({ia:key})
+                            ia += 1
+                        user_case_delete = input("Enter number of access-list for delete (e:exit): ")
+                        if user_case_delete == "e":
+                            break
+                        user_case_delete = int(user_case_delete)
+                        user_config = self.__set_aclConfig_aclComand(d_acl[user_case_delete])
+                        print(f"log: {user_config} is running ..")
+                        connect.send_config_set(user_config)
+                        print(f"log: saving switch config!")
+                        self.__save(connect)
+                        
+                case "5":
+                    user_ip = input("Enter switch ip (e:exit): ")
+                    if user_ip == "e":
+                        break
+
+                    connect = self.__cnt(user_ip)
+
+                    while True:
+                        os.system('cls')
+                        result = self.__get_switch_access_list_dict(connect)
+                        
+                        if not result:
+                            print("No access-list found.")
+                            input("\nPress Enter to continue...")
+                            break
+
+                        print(f"Current Access-List and Rules (IP: {user_ip}):\n")
+                        rules_map = {}
+
+                        for acl_idx, (acl_name, rules) in enumerate(result.items(), start=1):
+                            print(f"{acl_idx}. Access-List: {acl_name}")
+                            if not rules:
+                                print("   └── (No rules)")
+                                continue
+
+                            for r_idx, rule in enumerate(rules, start=1):
+                                rule_code = acl_idx * 10 + r_idx
+                                rules_map[rule_code] = (acl_name, rule)
+                                branch = "└── " if r_idx == len(rules) else "├── "
+                                print(f"   {branch}{rule_code}. {rule}")
+                            print()
+
+                        user_choice = input("Enter rule number to delete (e:exit): ")
+                        if user_choice == "e":
+                            break
+
+                        try:
+                            rule_code = int(user_choice)
+                        except ValueError:
+                            print("Your number is invalid!")
+                            time.sleep(1)
+                            continue
+
+                        if rule_code not in rules_map:
+                            print("Rule number not found!")
+                            time.sleep(1)
+                            continue
+
+                        target_acl, target_rule = rules_map[rule_code]
+
+                        acl_cmd = self.__set_aclConfig_aclComand(target_acl)
+                        del_commands = [acl_cmd, f"no {target_rule}"]
+
+                        print(f"\nlog: deleting rule '{target_rule}' from '{target_acl}' ..")
+                        connect.send_config_set(del_commands)
+
+                        print("log: saving switch config!")
+                        self.__save(connect)
+                        time.sleep(1.5)
+
+
+                
+                case "d":
+                    user_ip = input("Enter switch ip (e:exit): ")
+                    connect = self.__cnt(user_ip)
+                    connect.config_mode()
+                    input()
+
+                case "e":
+                    break
+            
     def __save(self, connect:BaseConnection):
         output = connect.send_command_timing("copy running-config startup-config")
         if "Destination filename" in output:
