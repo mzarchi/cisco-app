@@ -844,6 +844,10 @@ class Core:
                     
                     acl_name = d_acl[acl_num]
 
+                    prefix = "Extended IP access list "
+                    if acl_name.startswith(prefix):
+                        acl_name = acl_name[len(prefix):].strip()
+
                     print("\nEnter rule to add below this ACL.")
                     print("Example:")
                     print("permit tcp any any eq 80")
