@@ -751,6 +751,7 @@ class Core:
             
     @method_logger
     def case_access_list_manager(self) -> None:
+        self.ter_cls()
         uc_msg = "Please select on of below:\n"
         uc_msg += "1. View switch access-list and rules\n"
         uc_msg += "2. Add switch access-list\n"
@@ -785,7 +786,7 @@ class Core:
                     
                     while True:
                         ia = 1
-                        os.system('cls')
+                        self.ter_cls()
                         print(f"Current Access-List (IP: {user_ip}):")
                         connect = self.__cnt(user_ip)
                         result = self.__get_switch_access_list_dict(connect)
@@ -889,9 +890,9 @@ class Core:
                     connect = self.__cnt(user_ip)
 
                     while True:
-                        os.system('cls')
+                        self.ter_cls()
                         result = self.__get_switch_access_list_dict(connect)
-                        
+
                         if not result:
                             print("No access-list found.")
                             input("\nPress Enter to continue...")
@@ -900,47 +901,38 @@ class Core:
                         print(f"Current Access-List and Rules (IP: {user_ip}):\n")
                         rules_map = {}
 
-                        for acl_idx, (acl_name, rules) in enumerate(result.items(), start=1):
-                            print(f"{acl_idx}. Access-List: {acl_name}")
-                            if not rules:
-                                print("   └── (No rules)")
-                                continue
+                        for acl_index, (acl_name, rules) in enumerate(result.items(), start=1):
+                            print(f"{acl_index}. {acl_name}")
 
-                            for r_idx, rule in enumerate(rules, start=1):
-                                rule_code = acl_idx * 10 + r_idx
-                                rules_map[rule_code] = (acl_name, rule)
-                                branch = "└── " if r_idx == len(rules) else "├── "
-                                print(f"   {branch}{rule_code}. {rule}")
+                            for rule_index, rule in enumerate(rules, start=1):
+                                rule_number = acl_index * 10 + rule_index
+                                rules_map[rule_number] = (acl_name, rule)
+                                branch = "└── " if rule_index == len(rules) else "├── "
+                                print(f"   {branch}{rule_number}. {rule}")
                             print()
 
-                        user_choice = input("Enter rule number to delete (e:exit): ")
-                        if user_choice == "e":
+                        user_choice = input("Enter rule number to delete (e:exit): ").strip()
+                        if user_choice.lower() == "e":
                             break
 
                         try:
-                            rule_code = int(user_choice)
+                            rule_number = int(user_choice)
                         except ValueError:
-                            print("Your number is invalid!")
-                            time.sleep(1)
+                            print("Invalid number!")
+                            time.sleep(1.5)
                             continue
 
-                        if rule_code not in rules_map:
+                        if rule_number not in rules_map:
                             print("Rule number not found!")
-                            time.sleep(1)
+                            time.sleep(1.5)
                             continue
-
-                        target_acl, target_rule = rules_map[rule_code]
-
-                        acl_cmd = self.__set_aclConfig_aclComand(target_acl)
-                        del_commands = [acl_cmd, f"no {target_rule}"]
-
-                        print(f"\nlog: deleting rule '{target_rule}' from '{target_acl}' ..")
-                        connect.send_config_set(del_commands)
-
-                        print("log: saving switch config!")
+                        
+                        target_acl, target_rule = rules_map[rule_number]
+                        target_acl_clean = target_acl.split()[-1]
+                        sequence_number = target_rule.strip().split()[0]
+                        delete_commands = [f"ip access-list extended {target_acl_clean}", f"no {sequence_number}",]
+                        connect.send_config_set(delete_commands)
                         self.__save(connect)
-                        time.sleep(1.5)
-
 
                 
                 case "d":
