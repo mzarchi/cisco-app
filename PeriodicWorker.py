@@ -12,6 +12,7 @@ class PeriodicWorker:
         self._thread: Optional[threading.Thread] = None
 
     def _run(self) -> None:
+        lg("Started!")
         if self.run_immediately:
             try:
                 self.task()
