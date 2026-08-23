@@ -161,23 +161,25 @@ class Core:
         message += "I always live in the depths of the Internet ❤️"                                                                                                                  
         print(message)
 
-    def show_menu(self):
+    def show_menu(self, last_worker_run="Never", worker_status="Waiting"):
         self.ter_cls()
-        message = "Please select one of the options below:\n"
-        message += "\t0- App Settings (Edit all app settings)\n"
-        message += "\t1- IP Scanner + Subnet (Get all ip by subnet)\n"
-        message += "\t2- Switch Scan (Get list of your switches)\n"
-        message += "\t3- Switches Link (Get uplink of your switches)\n"
-        message += "\t4- Swtiches IPs (Get list of your IP Address in your switch)\n"
-        message += "\t5- Get DNS name by IP\n"
-        message += "\t6- Switch Config Manager\n"
-        message += "\t7- Access-List Manager\n"
-        message += "\t8- Get Backup from Config/Interfaces/version/CDP details of switches\n"
-        message += "\ts- Search in Switches IPs database\n"
-        message += "\tc- Get CSV from database\n"
-        message += "\tr- Run SQL Query on database\n"
-        message += "\te- Exit\nPlease insert option number: "
-        return message
+        services = f"Services last-run & status: {last_worker_run} ({worker_status})\n"
+        menu =  f"""Please select one of the options below:
+            0- App Settings (Edit all app settings)
+            1- IP Scanner + Subnet (Get all ip by subnet)
+            2- Switch Scan (Get list of your switches)
+            3- Switches Link (Get uplink of your switches)
+            4- Switches IPs (Get list of your IP Address in your switch)
+            5- Get DNS name by IP
+            6- Switch Config Manager
+            7- Access-List Manager
+            8- Get Backup from Config/Interfaces/version/CDP details of switches
+            s- Search in Switches IPs database
+            c- Get CSV from database
+            r- Run SQL Query on database
+            e- Exit"""
+        return f"{services}{menu}\n\nPlease insert option number: "
+
 
     def ping_host(self, ip):
         cmd = ["ping", "-n", "1", "-w", "300", ip]
@@ -694,6 +696,7 @@ class Core:
 
     @method_logger
     def switch_ips_worker(self) -> None:
+        lg("Started!")
         connect_failed = 0
         ready_data = {}
         switch_ips = []
@@ -703,36 +706,43 @@ class Core:
         date_time = f"{dt['unix']}"
         
         for hip in switch_ips:
-            connect = self.__cnt(hip)
-            if connect is None:
-                connect_failed += 1
-                if connect_failed == 3:
+            try:
+                connect = self.__cnt(hip)
+                if connect is None:
+                    connect_failed += 1
+                    if connect_failed == 3:
+                        break
+                    else:
+                        continue
+
+                connect_failed = 0
+                sidta = connect.send_command("show ip device tracking all")
+                if "%" in sidta:
+                    sidta = connect.send_command("show device-tracking database")
+
+                pattern = re.compile(
+                    r"(\d+\.\d+\.\d+\.\d+)"
+                    r".*?"
+                    r"([0-9A-Fa-f]{4}(?:\.[0-9A-Fa-f]{4}){2})"
+                    r".*?"
+                    r"(\S*\/\S*)"
+                )
+                
+                
+                actives = ["ACTIVE", "Active", "active", "REACHABLE", "Reachable", "reachable"]
+                for line in sidta.splitlines():
+                    if any(state in line.split() for state in actives):
+                        match = pattern.search(line)
+                        if match:
+                            ip, mac, port = match.groups()
+                            imsp = f"{ip}|{mac}|{hip}|{port}"
+                            ready_data.update({ip:imsp})
+            except Exception as e:
+                lg(type(e).__name__)
+                if hip == switch_ips[-1]:
                     break
                 else:
                     continue
-
-            connect_failed = 0
-            sidta = connect.send_command("show ip device tracking all")
-            if "%" in sidta:
-                sidta = connect.send_command("show device-tracking database")
-
-            pattern = re.compile(
-                r"(\d+\.\d+\.\d+\.\d+)"
-                r".*?"
-                r"([0-9A-Fa-f]{4}(?:\.[0-9A-Fa-f]{4}){2})"
-                r".*?"
-                r"(\S*\/\S*)"
-            )
-            
-            
-            actives = ["ACTIVE", "Active", "active", "REACHABLE", "Reachable", "reachable"]
-            for line in sidta.splitlines():
-                if any(state in line.split() for state in actives):
-                    match = pattern.search(line)
-                    if match:
-                        ip, mac, port = match.groups()
-                        imsp = f"{ip}|{mac}|{hip}|{port}"
-                        ready_data.update({ip:imsp})
                         
         self.db.insert_ipdata(ready_data, date_time, dt['dati'])
         if connect_failed < 3:
