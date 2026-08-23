@@ -1,5 +1,6 @@
 import os
 import sys
+import getpass
 
 
 class Config:
@@ -25,7 +26,7 @@ class Config:
     domain = ""
     ssh_switch_range = ""
     auth_dict = {}
-    mk = [None] * 18
+    mk = []
     banner = """
    █████████   ███                                 █████████                      
   ███░░░░░███ ░░░                                 ███░░░░░███                     
@@ -51,25 +52,46 @@ class Config:
         os.makedirs(db_dirs, exist_ok=True)
         self.db_dir = f"{db_dirs}app_data.db"
 
-        self.mk[0] = self.data_dir = f"C:/Users/{user}/Desktop/CA-Data/"
-        self.mk[1] = self.backup_dir = f"{self.data_dir}Backup/"
-        self.mk[2] = self.config_dir = f"{self.data_dir}Configs/"
-        self.mk[3] = self.logs_dir = f"{self.data_dir}ConfigsLogs/"
-        self.mk[4] = self.ips_dir = f"{self.data_dir}SwitchesIPs/"
-        self.mk[5] = self.vlans_dir = f"{self.data_dir}SwitchVlans/"
-        self.mk[6] = self.scanner_dir = f"{self.data_dir}IPScanner/"
-        self.mk[7] = self.systemlog_dir = f"{self.data_dir}SystemLog/"
-        self.mk[8] = self.switchcdp_dir = f"{self.data_dir}SwitchCDP/"
-        self.mk[9] = self.switchlist_dir = f"{self.data_dir}SwitchList/"
-        self.mk[10] = self.superputty_dir = f"{self.data_dir}SupperPutty/"
-        self.mk[11] = self.recordDNS_dir = f"{self.data_dir}RecordDNS/"
-        self.mk[12] = self.switchlinks_dir = f"{self.data_dir}SwitchLinks/"
-        self.mk[13] = self.version_dir = f"{self.data_dir}SwitchesVersions/"
-        self.mk[14] = self.interface_dir = f"{self.data_dir}SwitchesInterfaces/"
-        self.mk[15] = self.switchconfig_dir = f"{self.data_dir}SwitchesConfigs/"
-        self.mk[16] = self.debug_result = f"{self.data_dir}DebugResult/"
-        self.mk[17] = self.AccessList = f"{self.data_dir}AccessList/"
         
+        self.data_dir = f"C:/Users/{user}/Desktop/CA-Data/"
+        self.backup_dir = f"{self.data_dir}Backup/"
+        self.config_dir = f"{self.data_dir}Configs/"
+        self.logs_dir = f"{self.data_dir}ConfigsLogs/"
+        self.ips_dir = f"{self.data_dir}SwitchesIPs/"
+        self.vlans_dir = f"{self.data_dir}SwitchVlans/"
+        self.scanner_dir = f"{self.data_dir}IPScanner/"
+        self.systemlog_dir = f"{self.data_dir}SystemLog/"
+        self.switchcdp_dir = f"{self.data_dir}SwitchCDP/"
+        self.switchlist_dir = f"{self.data_dir}SwitchList/"
+        self.superputty_dir = f"{self.data_dir}SupperPutty/"
+        self.recordDNS_dir = f"{self.data_dir}RecordDNS/"
+        self.switchlinks_dir = f"{self.data_dir}SwitchLinks/"
+        self.version_dir = f"{self.data_dir}SwitchesVersions/"
+        self.interface_dir = f"{self.data_dir}SwitchesInterfaces/"
+        self.switchconfig_dir = f"{self.data_dir}SwitchesConfigs/"
+        self.debug_result = f"{self.data_dir}DebugResult/"
+        self.AccessList = f"{self.data_dir}AccessList/"
+        
+        self.mk = [
+            self.data_dir,
+            self.backup_dir,
+            self.config_dir,
+            self.logs_dir,
+            self.ips_dir,
+            self.vlans_dir,
+            self.scanner_dir,
+            self.systemlog_dir,
+            self.switchcdp_dir,
+            self.switchlist_dir,
+            self.superputty_dir,
+            self.recordDNS_dir,
+            self.switchlinks_dir,
+            self.version_dir,
+            self.interface_dir,
+            self.switchconfig_dir,
+            self.debug_result,
+            self.AccessList,
+        ]
 
         for i in self.mk:
             os.makedirs(i, exist_ok=True)
