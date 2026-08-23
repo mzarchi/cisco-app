@@ -17,6 +17,7 @@ import platform
 import ipaddress
 import subprocess
 
+
 class Core:
     cf = Config()
     db = Database()
@@ -38,7 +39,7 @@ class Core:
                 if result.returncode == 0:
                     return ip
             except subprocess.TimeoutExpired as e:
-                #lg(f"{ip}:{type(e).__name__}") Igored
+                # lg(f"{ip}:{type(e).__name__}") Igored
                 return None
             except Exception as e:
                 lg(f"{ip}:{type(e).__name__}")
@@ -156,16 +157,16 @@ class Core:
     def show_banner(self):
         print(Config.banner)
         message = f"Developer: github/mzarchi, Open-Source project\n"
-        message += "First-Commit: G0-2508, version: G132-2608\n" # G{CommitsCounts}-{YYMM}
+        message += "First-Commit: G0-2508, version: G173-2608\n" # G{CommitsCounts}-{YYMM}
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
-        message += "I always live in the depths of the Internet ❤️"                                                                                                                  
+        message += "I always live in the depths of the Internet ❤️"
         print(message)
 
     def show_menu(self, last_worker_run="Never", worker_status="Waiting"):
         self.ter_cls()
         services = f"Services last-run & status: {last_worker_run} ({worker_status})\n"
-        menu =  f"""Please select one of the options below:
+        menu = f"""Please select one of the options below:
             0- App Settings (Edit all app settings)
             1- IP Scanner + Subnet (Get all ip by subnet)
             2- Switch Scan (Get list of your switches)
@@ -180,7 +181,6 @@ class Core:
             r- Run SQL Query on database
             e- Exit"""
         return f"{services}{menu}\n\nPlease insert option number: "
-
 
     def ping_host(self, ip):
         cmd = ["ping", "-n", "1", "-w", "300", ip]
@@ -199,7 +199,7 @@ class Core:
             except Exception as e:
                 lg(type(e).__name__)
                 pass
-        return open_ports 
+        return open_ports
 
     @method_logger
     def case_ip_scanner(self):
@@ -423,13 +423,12 @@ class Core:
                                 c3_username = input("Input username for remove: ")
                                 self.db.del_admin_data(en.encode(c3_username))
 
-                
                 case "3":
                     data = self.db.get_app_variables()
                     new_value = input(f"Enter a switch_ips_worker interval (current:{data[1]}s, e:exit): ")
                     if new_value != "e":
                         self.db.set_app_variables(new_value)
-                    
+
                 case "d":
                     self.ter_cls()
                     dt = self.get_datetime()
@@ -441,7 +440,7 @@ class Core:
                         cd_case_number = input(cd_message)
                         if cd_case_number == "e":
                             break
-                        
+
                         match cd_case_number:
                             case "cct":
                                 self.ter_cls()
@@ -453,7 +452,7 @@ class Core:
                                     cct_user_input = input(cct_message)
                                     if cct_user_input == "e":
                                         break
-                                    
+
                                     if cct_user_input == "1":
                                         self.scan_network()
                                         all_ip = self.cf.all_switches
@@ -462,24 +461,24 @@ class Core:
                                         all_ip = [ip]
                                     else:
                                         continue
-                                    
+
                                     for i, ip in enumerate(all_ip):
                                         connect = self.__cnt(ip)
                                         if connect is None:
                                             continue
-                                        
+
                                         version_data = connect.send_command("show version")
                                         model = self.find_model(version_data)
                                         model_number = re.findall(r"\d{4}", model)
                                         switch_configs = connect.send_command("show running-config")
                                         switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
                                         cct_text_file = "\n".join(switch_configs_lines) + "\n"
-                                        
+
                                         cct_file_name = f"{self.cf.debug_result}{dt['date']}_{dt['time']}_{ip:-<15}_{model_number[0]}.txt"
                                         print(f"{ip:<15}: {cct_file_name}")
                                         with open(cct_file_name, "a") as file:
                                             file.write(cct_text_file)
-                            
+
                             case "psc":
                                 for ip in self.sw_con.keys():
                                     print(f"{ip:<15}, obj: {self.sw_con[ip]['obj']}, create: {self.sw_con[ip]['created']}, used: {self.sw_con[ip]['used']}")
@@ -571,15 +570,15 @@ class Core:
                     'password': self.cf.auth_dict[auth_index]['password'],
                     'secret': self.cf.auth_dict[auth_index]['secret'],
                 }
-                
+
                 connect = ConnectHandler(**cisco_switch)
                 connect.enable()
-                self.sw_con.update({ip : {"obj": connect, "created" : date_time, "used" : date_time}})
+                self.sw_con.update({ip: {"obj": connect, "created": date_time, "used": date_time}})
                 return connect
             except NetmikoTimeoutException as e:
                 # lg(f"{ip}:{type(e).__name__}") Ignored
                 break
-            
+
             except NetMikoAuthenticationException as e:
                 # lg(f"{ip}:{type(e).__name__}") Ignored
                 if auth_index < len(self.cf.auth_dict):
@@ -587,14 +586,14 @@ class Core:
                     continue
                 else:
                     break
-            
+
             except ReadTimeout as e:
                 # lg(f"{ip}:{type(e).__name__}") Ignored
                 break
-            
+
             except Exception as e:
                 lg(f"{ip}:{type(e).__name__}")
-                
+
     def get_dns_name(self, ip):
         result = "None"
         try:
@@ -646,8 +645,8 @@ class Core:
                     r".*?"
                     r"(\S*\/\S*)"
                 )
-                
-                #date_time = f"{dt['unix']}"
+
+                # date_time = f"{dt['unix']}"
                 actives = ["ACTIVE", "Active", "active", "REACHABLE", "Reachable", "reachable"]
                 for line in sidta.splitlines():
                     if any(state in line.split() for state in actives):
@@ -661,20 +660,20 @@ class Core:
                                 imsp_sec = "Update"
                                 if new_imsp:
                                     imsp_sec = "Insert (New!)"
-                                    
+
                                 if dns_name != "---------------":
                                     dns_i += 1
                                     line = f"({counter:<3}, {dns_i:<3}) - IP: {ip:<18} Switch: {hip:<18} Port: {port:<25} PC-Name: {dns_name:<30} Action: {imsp_sec}"
                                 else:
                                     line = f"({counter:<3}, ---) - IP: {ip:<18} Switch: {hip:<18} Port: {port:<25} PC-Name: {dns_name:<30} Action: {imsp_sec}"
-                                    
+
                                 ip_text_file += f"{line}\n"
                                 print(line)
                                 counter += 1
 
                             else:
                                 imsp = f"{ip}|{mac}|{hip}|{port}"
-                                ready_data.update({ip:imsp})
+                                ready_data.update({ip: imsp})
                                 line = f"{counter:<4}- IP: {ip:<18} MAC: {mac:<18} Switch: {hip:<18} Port: {port:<25}"
                                 ip_text_file += f"{line}\n"
                                 print(line)
@@ -705,7 +704,7 @@ class Core:
 
         dt = self.get_datetime()
         date_time = f"{dt['unix']}"
-        
+
         for hip in switch_ips:
             try:
                 connect = self.__cnt(hip)
@@ -728,8 +727,7 @@ class Core:
                     r".*?"
                     r"(\S*\/\S*)"
                 )
-                
-                
+
                 actives = ["ACTIVE", "Active", "active", "REACHABLE", "Reachable", "reachable"]
                 for line in sidta.splitlines():
                     if any(state in line.split() for state in actives):
@@ -737,18 +735,18 @@ class Core:
                         if match:
                             ip, mac, port = match.groups()
                             imsp = f"{ip}|{mac}|{hip}|{port}"
-                            ready_data.update({ip:imsp})
+                            ready_data.update({ip: imsp})
             except Exception as e:
                 lg(type(e).__name__)
                 if hip == switch_ips[-1]:
                     break
                 else:
                     continue
-                        
+
         self.db.insert_ipdata(ready_data, date_time, dt['dati'])
         if connect_failed < 3:
             pass
-            
+
     @method_logger
     def case_access_list_manager(self) -> None:
         self.ter_cls()
@@ -771,7 +769,7 @@ class Core:
                         if user_ip == "e":
                             break
                         connect = self.__cnt(user_ip)
-                        result = self.__get_switch_access_list_dict(connect) 
+                        result = self.__get_switch_access_list_dict(connect)
                         for key, values in result.items():
                             print(key)
                             for index, value in enumerate(values):
@@ -783,7 +781,7 @@ class Core:
                     user_ip = input("Enter switch ip (e:exit): ")
                     if user_ip == "e":
                         break
-                    
+
                     while True:
                         ia = 1
                         self.ter_cls()
@@ -815,12 +813,12 @@ class Core:
                             break
                         connect.send_config_set(new_access_list)
                         connect.save_config()
-                        
+
                 case "3":
                     user_ip = input("Enter switch ip (e:exit): ")
                     if user_ip == "e":
                         break
-                    
+
                     connect = self.__cnt(user_ip)
                     result = self.__get_switch_access_list_dict(connect)
 
@@ -837,11 +835,11 @@ class Core:
                     except ValueError:
                         print("Your number is invalid!")
                         continue
-                    
+
                     if acl_num not in d_acl:
                         print("Your acl not in switch")
                         continue
-                    
+
                     acl_name = d_acl[acl_num]
 
                     prefix = "Extended IP access list "
@@ -854,15 +852,15 @@ class Core:
                     print("deny ip any any")
                     rule = input("Enter rule: ")
 
-                    config_commands = [f"ip access-list extended {acl_name}",rule]
+                    config_commands = [f"ip access-list extended {acl_name}", rule]
                     connect.send_config_set(config_commands)
                     self.__save(connect)
-                
+
                 case "4":
                     user_ip = input("Enter switch ip (e:exit): ")
                     if user_ip == "e":
                         break
-                    
+
                     connect = None
                     while True:
                         ia = 1
@@ -874,7 +872,7 @@ class Core:
                         result = self.__get_switch_access_list_dict(connect)
                         for key in result.keys():
                             print(f"{ia:<2}. {key}")
-                            d_acl.update({ia:key})
+                            d_acl.update({ia: key})
                             ia += 1
                         user_case_delete = input("Enter number of access-list for delete (e:exit): ")
                         if user_case_delete == "e":
@@ -885,7 +883,7 @@ class Core:
                         connect.send_config_set(user_config)
                         print(f"log: saving switch config!")
                         self.__save(connect)
-                        
+
                 case "5":
                     user_ip = input("Enter switch ip (e:exit): ")
                     if user_ip == "e":
@@ -930,7 +928,7 @@ class Core:
                             print("Rule number not found!")
                             time.sleep(1.5)
                             continue
-                        
+
                         target_acl, target_rule = rules_map[rule_number]
                         target_acl_clean = target_acl.split()[-1]
                         sequence_number = target_rule.strip().split()[0]
@@ -938,7 +936,6 @@ class Core:
                         connect.send_config_set(delete_commands)
                         self.__save(connect)
 
-                
                 case "d":
                     user_ip = input("Enter switch ip (e:exit): ")
                     connect = self.__cnt(user_ip)
@@ -947,18 +944,18 @@ class Core:
 
                 case "e":
                     break
-            
-    def __save(self, connect:BaseConnection):
+
+    def __save(self, connect: BaseConnection):
         output = connect.send_command_timing("copy running-config startup-config")
         if "Destination filename" in output:
             output += connect.send_command_timing("\n")
-        
+
     def __set_aclConfig_aclComand(self, sw_config):
         sw_conf_list = sw_config.split(" ")
         if sw_conf_list[0] == "Extended":
             return f"no ip access-list extended {sw_conf_list[-1]}"
-    
-    def __get_switch_access_list_dict(self, connect:BaseConnection):
+
+    def __get_switch_access_list_dict(self, connect: BaseConnection):
         command_result = connect.send_command("show access-lists")
         result = {}
         current_key = None
@@ -972,9 +969,9 @@ class Core:
                 result[current_key] = []
             else:
                 result[current_key].append(line.strip())
-                
+
         return result
-    
+
     @method_logger
     def case_config_manager(self):
         """
@@ -1037,21 +1034,21 @@ class Core:
                         all_ip = self.cf.all_switches
                     else:
                         all_ip = [funcs[4]]
-                        
+
                     for i, ip in enumerate(all_ip):
                         connect = self.__cnt(ip)
                         if connect is None:
                             continue
-                        
+
                         version_data = connect.send_command("show version")
                         model = self.find_model(version_data)
                         model_number = re.findall(r"\d{4}", model)
                         if int(model_number[0]) < 9000:
                             continue
-                        
+
                         switch_configs = connect.send_command("show running-config")
                         switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
-                        
+
                         nfind = []
                         for i, fline in enumerate(lines[2:], start=2):
                             if "****" in fline:
@@ -1062,14 +1059,13 @@ class Core:
                                 if fline not in switch_configs_lines:
                                     nfind.append(i)
 
-                        
                         nfind_str = ""
                         for i in nfind:
                             nfind_str += f"{lines[i].replace('____', '\n  ')}\n"
-                            
+
                         with open(f"{self.cf.logs_dir}{dt['unix']}-sw{ip}.txt", "a") as file:
                             file.write(nfind_str)
-                            
+
                         txt_helper = f"ip: {ip:<18}, Model: {model:<20}, Count {len(nfind):<4}, Cases: {", ".join(f"{item:<3}" for item in nfind)}"
                         txt_result += f"{txt_helper}\n"
                         print(txt_helper)
@@ -1077,28 +1073,28 @@ class Core:
                     with open(f"{self.cf.logs_dir}{dt['unix']}-{funcs[0]}_{funcs[1]}_{funcs[2]}_{funcs[3]}_result.txt", "a") as file:
                         file.write(txt_result)
                     input("Press any key to back ..")
-                    
+
                 case ("view", "switch", "-", "old"):
                     if funcs[4] == "all":
                         self.scan_network()
                         all_ip = self.cf.all_switches
                     else:
                         all_ip = [funcs[4]]
-                        
+
                     for i, ip in enumerate(all_ip):
                         connect = self.__cnt(ip)
                         if connect is None:
                             continue
-                        
+
                         version_data = connect.send_command("show version")
                         model = self.find_model(version_data)
                         model_number = re.findall(r"\d{4}", model)
                         if int(model_number[0]) > 3000:
                             continue
-                        
+
                         switch_configs = connect.send_command("show running-config")
                         switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
-                        
+
                         nfind = []
                         for i, fline in enumerate(lines[2:], start=2):
                             if "****" in fline:
@@ -1109,14 +1105,13 @@ class Core:
                                 if fline not in switch_configs_lines:
                                     nfind.append(i)
 
-                        
                         nfind_str = ""
                         for i in nfind:
                             nfind_str += f"{lines[i].replace('____', '\n  ')}\n"
-                            
+
                         with open(f"{self.cf.logs_dir}{dt['unix']}-sw{ip}.txt", "a") as file:
                             file.write(nfind_str)
-                            
+
                         txt_helper = f"ip: {ip:<18}, Model: {model:<20}, Count {len(nfind):<4}, Cases: {", ".join(f"{item:<3}" for item in nfind)}"
                         txt_result += f"{txt_helper}\n"
                         print(txt_helper)
@@ -1124,7 +1119,7 @@ class Core:
                     with open(f"{self.cf.logs_dir}{dt['unix']}-{funcs[0]}_{funcs[1]}_{funcs[2]}_{funcs[3]}_result.txt", "a") as file:
                         file.write(txt_result)
                     input("Press any key to back ..")
-                
+
                 case ("set", "port", "access", "new"):
                     if funcs[4] == "all":
                         self.scan_network()
@@ -1188,7 +1183,7 @@ class Core:
                                     else:
                                         print(f"{ip:15} - {key} already set!")
                         connect.save_config()
-                        
+
                 case ("set", "switch", "-", "all"):
                     if funcs[4] == "all":
                         self.scan_network()
@@ -1205,7 +1200,7 @@ class Core:
                         clines = lines[2:]
                         connect.send_config_set(clines)
                         connect.save_config()
-                        
+
                 case ("set", "port", "trunk", "all"):
                     if funcs[4] == "all":
                         self.scan_network()
@@ -1235,7 +1230,7 @@ class Core:
                                     else:
                                         print(f"{ip:15} - {key} already set!")
                         connect.save_config()
-                        
+
     def coreConfigFormatChanger(self, config):
         output = []
         parent = None

@@ -11,7 +11,7 @@ import threading
 import time
 
 
-ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp vG132-2608")
+ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp vG173-2608")
 
 
 startup_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -180,6 +180,6 @@ while True:
             break
 
 '''
-pyinstaller --onefile --icon=icon/cisco-app.ico --version-file="version_info.txt" --name=Cisco-App_vG132-2608 main.py
+pyinstaller --onefile --icon=icon/cisco-app.ico --version-file="version_info.txt" --name=Cisco-App_vG173-2608 main.py
 git rev-list --count HEAD
 '''
