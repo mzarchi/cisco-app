@@ -1,5 +1,6 @@
 import threading
 from typing import Callable, Optional
+from decorators import lg
 
 
 class PeriodicWorker:
@@ -14,7 +15,8 @@ class PeriodicWorker:
         if self.run_immediately:
             try:
                 self.task()
-            except Exception as error:
+            except Exception as e:
+                lg(type(e).__name__)
                 pass
 
         while not self._stop_event.is_set():
@@ -23,7 +25,8 @@ class PeriodicWorker:
 
             try:
                 self.task()
-            except Exception as error:
+            except Exception as e:
+                lg(type(e).__name__)
                 pass
 
     def start(self) -> None:
