@@ -1,20 +1,20 @@
-from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from collections.abc import Callable
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
 from threading import Lock
 from time import perf_counter
 from typing import Any
-from config import Config
 import inspect
+
+from config import Config
 
 cf = Config()
 _log_lock = Lock()
 
 
 def _get_log_path() -> Path:
-    return Path(cf.systemlog_dir) / f"MethodLogger_{datetime.now().strftime("%Y%m%d")}.txt"
+    return Path(cf.systemlog_dir) / f"MethodLogger_{datetime.now():%Y%m%d}.txt"
 
 
 def append_log(contents: str) -> None:
@@ -42,44 +42,47 @@ def method_logger(func: Callable[..., Any]) -> Callable[..., Any]:
         finally:
             finished_at = datetime.now()
             elapsed = perf_counter() - started_at
+            method_name = f"{func.__qualname__}()"[:80]
 
-            method_name = f"{func.__qualname__}()"[:30]
             log_text = (
                 f"{finished_at:%Y-%m-%d} | "
                 f"{finished_at:%H:%M:%S} | "
-                f"{method_name:<30} | "
+                f"{method_name:<80} | "
                 f"{elapsed:08.3f} | "
                 f"E: {error_message}"
             )
 
             append_log(log_text)
 
-            if hasattr(self, "log") and callable(self.log):
-                self.log(log_text)
-            else:
-                print(log_text)
-
     return wrapper
 
 
-def lg(step_name: str, error_message: str = "") -> None: # Line Logger, maybe i am mhz ?! :)
+def lg(step_name: str, error_message: str = "") -> None:
     caller_frame = inspect.currentframe().f_back
 
     try:
-        class_name = ""
         self_object = caller_frame.f_locals.get("self")
-        if self_object is not None:
-            class_name = f"{self_object.__class__.__name__}."
+        class_name = (
+            self_object.__class__.__name__
+            if self_object is not None
+            else ""
+        )
 
         function_name = caller_frame.f_code.co_name
         line_number = caller_frame.f_lineno
-        step_id = f"{class_name}{function_name}():L{line_number} {step_name}"
-        step_id = step_id[:30]
+
+        if class_name:
+            step_id = f"L{line_number}, {class_name}.{function_name}: {step_name}"
+        else:
+            step_id = f"L{line_number}, {function_name}: {step_name}"
+
+        step_id = step_id[:80]
         now = datetime.now()
+
         log_text = (
             f"{now:%Y-%m-%d} | "
             f"{now:%H:%M:%S} | "
-            f"{step_id:<30} | "
+            f"{step_id:<80} | "
             f"0000.000 | "
             f"E: {error_message}"
         )
