@@ -111,8 +111,7 @@ class Database:
         self.cursor.execute("SELECT * FROM app_variables")
         row = self.cursor.fetchone()
         if not row:
-            #self.cursor.execute("INSERT INTO app_variables (interval_switch_ip) VALUES (?)", ("300"))
-            self.cursor.execute("""INSERT INTO app_variables (interval_switch_ip) VALUES (?)""", ("300",))
+            self.cursor.execute("""INSERT INTO app_variables (interval_switch_ip) VALUES (?)""", ("240",))
         self.__close()
             
     def get_app_variables(self):
