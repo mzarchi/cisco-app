@@ -170,12 +170,13 @@ class Core:
             0- App Settings (Edit all app settings)
             1- IP Scanner + Subnet (Get all ip by subnet)
             2- Switch Scan (Get list of your switches)
-            3- Switches Link (Get uplink of your switches)
-            4- Switches IPs (Get list of your IP Address in your switch)
-            5- Get DNS name by IP
-            6- Switch Config Manager
-            7- Access-List Manager
-            8- Get Backup from Config/Interfaces/version/CDP details of switches
+            3- Switch Statuses
+            4- Switches Link (Get uplink of your switches)
+            5- Switches IPs (Get list of your IP Address in your switch)
+            6- Get DNS name by IP
+            7- Switch Config Manager
+            8- Access-List Manager
+            9- Get Backup from Config/Interfaces/version/CDP details of switches
             s- Search in Switches IPs database
             c- Get CSV from database
             r- Run SQL Query on database
@@ -201,6 +202,41 @@ class Core:
                 pass
         return open_ports
 
+    def switch_statuses(self):
+        self.ter_cls()
+        connect_failed = 0
+        user_special_ip = input("Enter Special Switch IP or Enter: ")
+        switch_ips = []
+        if user_special_ip == "":
+            self.scan_network()
+            switch_ips = self.cf.all_switches
+        else:
+            switch_ips.append(user_special_ip)
+
+        for hip in switch_ips:
+            try:
+                connect = self.__cnt(hip)
+                if connect is None:
+                    connect_failed += 1
+                    if connect_failed == 3:
+                        break
+                    else:
+                        continue
+                connect_failed = 0
+                
+                showenvall = connect.send_command("show env all")
+                pattern = r"System Temperature Value:\s*(\d+)\s*Degree Celsius"
+                temperature = re.search(pattern, showenvall).group(1)
+                print(f"- {hip:<15}, Temp: {temperature} °C")
+                
+            except Exception as e:
+                lg(type(e).__name__)
+                if hip == switch_ips[-1]:
+                    break
+                else:
+                    continue
+        input("Press any key to exit ..")
+        
     @method_logger
     def case_ip_scanner(self):
         base_ip_subnet = input("Insert your ip: ")
@@ -317,6 +353,7 @@ class Core:
         message += "\t1- Add/Remove SSH data\n"
         message += "\t2- Add/Remove SSH user login\n"
         message += "\t3- Set switch_ips_worker Interval\n"
+        message += "\t4- Show defs in all switches (write-in-file)\n"
         message += "\td- Debug Mode (Safe for user)\n"
         message += "\te- Exit from Settings\nPlease insert option number: "
 
@@ -429,6 +466,33 @@ class Core:
                     if new_value != "e":
                         self.db.set_app_variables(new_value)
 
+                case "4":
+                    self.ter_cls()
+                    user_imputs = input("Enter your Show Switch Method: ")
+                    connect_failed = 0
+                    switch_ips = []
+                    switch_ips = self.cf.all_switches.copy()
+                    for hip in switch_ips:
+                        try:
+                            connect = self.__cnt(hip)
+                            if connect is None:
+                                connect_failed += 1
+                                if connect_failed == 3:
+                                    break
+                                else:
+                                    continue
+
+                            connect_failed = 0
+                            show_result = connect.send_command(user_imputs)
+                            self.coreWriteFile(f"{self.cf.showDefResult}/{hip}-{user_imputs.replace(" ", "")}.txt", show_result)
+                            
+                        except Exception as e:
+                            lg(type(e).__name__)
+                            if hip == switch_ips[-1]:
+                                break
+                            else:
+                                continue
+                            
                 case "d":
                     self.ter_cls()
                     dt = self.get_datetime()
