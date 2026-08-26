@@ -45,8 +45,8 @@ class Config:
         pass
 
     def create_db_dir(self):
-        user = getpass.getuser()
-        #user = "Zarchi-PC"
+        #user = getpass.getuser()
+        user = "Zarchi-PC"
         self.user = user
         db_dirs = f"C:/Users/{user}/AppData/Local/ca_data/"
         os.makedirs(db_dirs, exist_ok=True)
@@ -54,43 +54,45 @@ class Config:
 
         
         self.data_dir = f"C:/Users/{user}/Desktop/CA-Data/"
-        self.backup_dir = f"{self.data_dir}Backup/"
-        self.config_dir = f"{self.data_dir}Configs/"
+        self.switchconfig_dir = f"{self.data_dir}SwitchesConfigs/"
+        self.interface_dir = f"{self.data_dir}SwitchesInterfaces/"
+        self.version_dir = f"{self.data_dir}SwitchesVersions/"
+        self.switchlinks_dir = f"{self.data_dir}SwitchLinks/"
+        self.showDefResult = f"{self.data_dir}ShowDefResult/"
+        self.superputty_dir = f"{self.data_dir}SupperPutty/"
+        self.switchlist_dir = f"{self.data_dir}SwitchList/"
+        self.debug_result = f"{self.data_dir}DebugResult/"
+        self.systemlog_dir = f"{self.data_dir}SystemLog/"
+        self.recordDNS_dir = f"{self.data_dir}RecordDNS/"
+        self.switchcdp_dir = f"{self.data_dir}SwitchCDP/"
+        self.vlans_dir = f"{self.data_dir}SwitchVlans/"
+        self.AccessList = f"{self.data_dir}AccessList/"
+        self.scanner_dir = f"{self.data_dir}IPScanner/"
         self.logs_dir = f"{self.data_dir}ConfigsLogs/"
         self.ips_dir = f"{self.data_dir}SwitchesIPs/"
-        self.vlans_dir = f"{self.data_dir}SwitchVlans/"
-        self.scanner_dir = f"{self.data_dir}IPScanner/"
-        self.systemlog_dir = f"{self.data_dir}SystemLog/"
-        self.switchcdp_dir = f"{self.data_dir}SwitchCDP/"
-        self.switchlist_dir = f"{self.data_dir}SwitchList/"
-        self.superputty_dir = f"{self.data_dir}SupperPutty/"
-        self.recordDNS_dir = f"{self.data_dir}RecordDNS/"
-        self.switchlinks_dir = f"{self.data_dir}SwitchLinks/"
-        self.version_dir = f"{self.data_dir}SwitchesVersions/"
-        self.interface_dir = f"{self.data_dir}SwitchesInterfaces/"
-        self.switchconfig_dir = f"{self.data_dir}SwitchesConfigs/"
-        self.debug_result = f"{self.data_dir}DebugResult/"
-        self.AccessList = f"{self.data_dir}AccessList/"
+        self.config_dir = f"{self.data_dir}Configs/"
+        self.backup_dir = f"{self.data_dir}Backup/"
         
         self.mk = [
-            self.data_dir,
-            self.backup_dir,
-            self.config_dir,
-            self.logs_dir,
             self.ips_dir,
+            self.logs_dir,
+            self.data_dir,
             self.vlans_dir,
+            self.config_dir,
+            self.AccessList,
+            self.backup_dir,
             self.scanner_dir,
-            self.systemlog_dir,
+            self.version_dir,
+            self.debug_result,
             self.switchcdp_dir,
+            self.systemlog_dir,
+            self.interface_dir,
+            self.showDefResult,
+            self.recordDNS_dir,
             self.switchlist_dir,
             self.superputty_dir,
-            self.recordDNS_dir,
             self.switchlinks_dir,
-            self.version_dir,
-            self.interface_dir,
             self.switchconfig_dir,
-            self.debug_result,
-            self.AccessList,
         ]
 
         for i in self.mk:
