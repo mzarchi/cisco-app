@@ -132,48 +132,6 @@ class Database:
         except Exception as e:
             pass
         
-    def count_user(self):
-        try:
-            self.__open()
-            result = self.cursor.execute("SELECT * FROM admin_data")
-            result = self.cursor.fetchall()
-            self.__close()
-        except Exception as e:
-            print(f"- F-core, C-App_DB, D-count_user: {e}")
-            sys.exit(1)
-
-        if len(result) <= 0:
-            return False
-        else:
-            return True
-
-    def insert_user_data(self, data):
-        try:
-            en = Encryption()
-            self.__open()
-            self.cursor.execute(
-                """INSERT INTO admin_data (
-                        username,
-                        password,
-                        secret,
-                        domain,
-                        sw_core,
-                        subnet,
-                        csv_name
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?)""", (
-                    en.encode(data['username']),
-                    en.encode(data['password']),
-                    en.encode(data['secret']),
-                    en.encode(data['domain']),
-                    en.encode(data['sw_core']),
-                    en.encode(data['subnet']),
-                    en.encode(data['csv_name'])
-                ))
-            self.__close()
-        except Exception as e:
-            print(f"- F-core, C-App_DB, D-insert_user_data: {e}")
-            sys.exit(1)
-
     def insert_switch_data(self, data):
         try:
             self.cursor.execute(
