@@ -147,23 +147,26 @@ while True:
 
         case "2":
             cr.case_switch_scan()
-
+            
         case "3":
-            cr.case_switch_link()
+            cr.switch_statuses()
 
         case "4":
-            cr.case_switch_ips()
+            cr.case_switch_link()
 
         case "5":
-            cr.case_switch_ips(dns_mode=True)
+            cr.case_switch_ips()
 
         case "6":
-            cr.case_config_manager()
+            cr.case_switch_ips(dns_mode=True)
 
         case "7":
-            cr.case_access_list_manager()
+            cr.case_config_manager()
 
         case "8":
+            cr.case_access_list_manager()
+
+        case "9":
             cr.coreGetSwitchesBackup()
 
         case "s":
