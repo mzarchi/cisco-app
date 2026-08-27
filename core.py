@@ -224,18 +224,48 @@ class Core:
                         continue
                 connect_failed = 0
                 
-                showenvall = connect.send_command("show env all")
-                pattern = r"System Temperature Value:\s*(\d+)\s*Degree Celsius"
-                temperature = re.search(pattern, showenvall).group(1)
-                print(f"- {hip:<15}, Temp: {temperature} °C")
-                
+                result_text = ""
+                temperature = f"{self.__get_switch_temp(connect)}°C"
+                result_text += f"- {hip:<15} Temp: {temperature:<5} "
+                ram_percent = f"{int(self.__get_switch_ram(connect))}%"
+                result_text += f"RAM: {ram_percent:<4} "
+                result_text += f"CPU: {self.__get_switch_cpu(connect):<4} "
+                print(result_text)
+
             except Exception as e:
-                lg(type(e).__name__)
+                lg(f"{hip}: {type(e).__name__}")
                 if hip == switch_ips[-1]:
                     break
                 else:
                     continue
         input("Press any key to exit ..")
+    
+    def __get_switch_temp(self, cnt:BaseConnection) -> int:
+        showenvall = cnt.send_command("show env all")
+        pattern = r"System Temperature Value:\s*(\d+)\s*Degree Celsius"
+        return re.search(pattern, showenvall).group(1)
+    
+    def __get_switch_ram(self, cnt:BaseConnection) -> int:
+        showmemorystatistics = cnt.send_command("show memory statistics")
+        pattern = r"^Processor\s+\S+\s+(\d+)\s+(\d+)\s+(\d+)"
+        memory = re.search(pattern, showmemorystatistics, re.MULTILINE)
+        ram_percent = 0
+        if memory:
+            total = int(memory.group(1))
+            used = int(memory.group(2))
+            ram_percent = (used * 100) / total
+            
+        return ram_percent
+    
+    def __get_switch_cpu(self, cnt:BaseConnection) -> int:
+        showprocesscpu = cnt.send_command("show processes cpu | include CPU")
+        cpu = re.search(r"five minutes:\s*(\d+%)", showprocesscpu)
+        five_minutes_cpu = 0
+        if cpu:
+            five_minutes_cpu = cpu.group(1)
+        
+        return five_minutes_cpu
+        
         
     @method_logger
     def case_ip_scanner(self):
