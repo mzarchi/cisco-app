@@ -229,7 +229,7 @@ class Core:
                 result_text += f"- {hip:<15} Temp: {temperature:<5} "
                 ram_percent = f"{int(self.__get_switch_ram(connect))}%"
                 result_text += f"RAM: {ram_percent:<4} "
-                result_text += f"CPU: {self.__get_switch_cpu(connect):<4} "
+                result_text += f"CPU: {self.__get_switch_cpu(connect):<2}% "
                 print(result_text)
 
             except Exception as e:
@@ -240,31 +240,58 @@ class Core:
                     continue
         input("Press any key to exit ..")
     
-    def __get_switch_temp(self, cnt:BaseConnection) -> int:
-        showenvall = cnt.send_command("show env all")
-        pattern = r"System Temperature Value:\s*(\d+)\s*Degree Celsius"
-        return re.search(pattern, showenvall).group(1)
-    
+    def __get_switch_temp(self, ip: str, cnt: BaseConnection) -> int:
+        int_value = 0
+        try:
+            showenvall = cnt.send_command("show env all")
+            if "FAULTY" in showenvall:
+                lg(f"ip: {ip}, Switch should be check!")
+                
+            match_legacy = re.search(r"System Temperature Value:\s*(\d+)\s*Degree Celsius", showenvall)
+            if match_legacy:
+                return int(match_legacy.group(1))
+
+            match_xe = re.search(r"SYSTEM HOTSPOT\s+\d+\s+\w+\s+(\d+)\s+Celsius", showenvall)
+            if match_xe:
+                return int(match_xe.group(1))
+
+        except ReadTimeout as rt:
+            lg(f"ip: {ip}, Error: ReadTimeout")
+            0
+        except Exception as e:
+            lg(f"{type(e).__name__}, IP: {ip}")
+
+        return int_value
+
     def __get_switch_ram(self, cnt:BaseConnection) -> int:
-        showmemorystatistics = cnt.send_command("show memory statistics")
-        pattern = r"^Processor\s+\S+\s+(\d+)\s+(\d+)\s+(\d+)"
-        memory = re.search(pattern, showmemorystatistics, re.MULTILINE)
-        ram_percent = 0
-        if memory:
-            total = int(memory.group(1))
-            used = int(memory.group(2))
-            ram_percent = (used * 100) / total
-            
-        return ram_percent
-    
-    def __get_switch_cpu(self, cnt:BaseConnection) -> int:
-        showprocesscpu = cnt.send_command("show processes cpu | include CPU")
-        cpu = re.search(r"five minutes:\s*(\d+%)", showprocesscpu)
-        five_minutes_cpu = 0
-        if cpu:
-            five_minutes_cpu = cpu.group(1)
+        try:
+            showmemorystatistics = cnt.send_command("show memory statistics")
+            pattern = r"^Processor\s+\S+\s+(\d+)\s+(\d+)\s+(\d+)"
+            memory = re.search(pattern, showmemorystatistics, re.MULTILINE)
+            ram_percent = 0
+            if memory:
+                total = int(memory.group(1))
+                used = int(memory.group(2))
+                ram_percent = int((used * 100) / total)
+                
+            return ram_percent
+        except Exception as e:
+            lg(type(e).__name__)
+            return 0
         
-        return five_minutes_cpu
+    def __get_switch_cpu(self, cnt:BaseConnection) -> int:
+        try:
+            showprocesscpu = cnt.send_command("show processes cpu | include CPU")
+            cpu = re.search(r"five minutes:\s*(\d+%)", showprocesscpu)
+            five_minutes_cpu = 0
+            if cpu:
+                five_minutes_cpu = int(cpu.group(1).replace("%", ""))
+            
+            return five_minutes_cpu
+        
+        except Exception as e:
+            lg(type(e).__name__)
+            return 0
         
         
     @method_logger
@@ -793,6 +820,7 @@ class Core:
         lg("Started!")
         connect_failed = 0
         ready_data = {}
+        sw_statuse = {}
         switch_ips = []
         switch_ips = self.cf.all_switches.copy()
 
@@ -800,6 +828,7 @@ class Core:
         date_time = f"{dt['unix']}"
 
         for hip in switch_ips:
+            sw_statuse_helper = {}
             try:
                 connect = self.__cnt(hip)
                 if connect is None:
@@ -810,9 +839,18 @@ class Core:
                         continue
 
                 connect_failed = 0
+                temp = self.__get_switch_temp(hip, connect)
+                cpu = self.__get_switch_cpu(connect)
+                ram = self.__get_switch_ram(connect)
+                sw_statuse_helper.update({"tmp":temp})
+                sw_statuse_helper.update({"cpu":cpu})
+                sw_statuse_helper.update({"ram":ram})
+                sw_statuse.update({hip:sw_statuse_helper})
+                
                 sidta = connect.send_command("show ip device tracking all")
                 if "%" in sidta:
                     sidta = connect.send_command("show device-tracking database")
+                
 
                 pattern = re.compile(
                     r"(\d+\.\d+\.\d+\.\d+)"
@@ -836,8 +874,8 @@ class Core:
                     break
                 else:
                     continue
-
-        self.db.insert_ipdata(ready_data, date_time, dt['dati'])
+                
+        self.db.insert_ipdata(ready_data, sw_statuse, date_time, dt['dati'])
         if connect_failed < 3:
             pass
 
