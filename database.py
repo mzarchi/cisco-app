@@ -99,6 +99,15 @@ class Database:
                                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                                     interval_switch_ip TEXT NOT NULL)
                                 """)
+            
+            self.cursor.execute("""
+                                CREATE TABLE IF NOT EXISTS sw_statuses (
+                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    unixt TEXT NOT NULL,
+                                    sw_ip TEXT NOT NULL,
+                                    pname TEXT NOT NULL,
+                                    value TEXT NOT NULL)
+                                """)
             self.__close()
             
             self.init_app_variables()
@@ -319,7 +328,7 @@ class Database:
             print(f"- F-core, C-App_DB, D-del_ipsubnet_data: {e}")
             sys.exit(1)
 
-    def insert_ipdata(self, data:dict, date_time, edit_field):
+    def insert_ipdata(self, data:dict, sw_statuse:dict, date_time, edit_field):
         try:
             self.__open()
             for imsp in data.values():
@@ -330,6 +339,11 @@ class Database:
                     self.cursor.execute("INSERT INTO ip_data (imsp, insert_date, update_date, edit_field) VALUES (?, ?, ?, ?)", (imsp, date_time, date_time, edit_field,))
                 else:
                     self.cursor.execute("UPDATE ip_data SET update_date = ?, edit_field = ? WHERE imsp = ?", (date_time, edit_field, imsp,))
+                                    
+            for ip in sw_statuse.keys():
+                self.cursor.execute("INSERT INTO sw_statuses (unixt, sw_ip, pname, value) VALUES (?, ?, ?, ?)", (date_time, ip, "temp", sw_statuse[ip]['tmp'],))
+                self.cursor.execute("INSERT INTO sw_statuses (unixt, sw_ip, pname, value) VALUES (?, ?, ?, ?)", (date_time, ip, "cpu", sw_statuse[ip]['cpu'],))
+                self.cursor.execute("INSERT INTO sw_statuses (unixt, sw_ip, pname, value) VALUES (?, ?, ?, ?)", (date_time, ip, "ram", sw_statuse[ip]['ram'],))
 
             self.__close()
         except Exception as e:
