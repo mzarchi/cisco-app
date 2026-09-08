@@ -9,6 +9,7 @@ class Database:
     cf = Config()
     conn = None
     cursor = None
+    db_open = False
     #cr = None
 
     def __init__(self):
@@ -24,6 +25,7 @@ class Database:
             cd = Config()
             self.conn = sqlite3.connect(cd.db_dir)
             self.cursor = self.conn.cursor()
+            self.db_open = True
         except Exception as e:
             print(f"- F-core, C-App_DB, D-__open: {e}")
             sys.exit(1)
@@ -32,6 +34,7 @@ class Database:
         try:
             self.conn.commit()
             self.conn.close()
+            self.db_open = False
         except Exception as e:
             print(f"- F-core, C-App_DB, D-__close: {e}")
             sys.exit(1)
@@ -116,7 +119,8 @@ class Database:
             sys.exit(1)
 
     def init_app_variables(self):
-        self.__open()
+        if not self.db_open:
+            self.__open()
         self.cursor.execute("SELECT * FROM app_variables")
         row = self.cursor.fetchone()
         if not row:
@@ -125,7 +129,8 @@ class Database:
             
     def get_app_variables(self):
         try:
-            self.__open()
+            if not self.db_open:
+                self.__open()
             self.cursor.execute("SELECT * FROM app_variables WHERE id = 1")
             row = self.cursor.fetchone()
             self.__close()
@@ -135,7 +140,8 @@ class Database:
         
     def set_app_variables(self, value):
         try:
-            self.__open()
+            if not self.db_open:
+                self.__open()
             self.cursor.execute("UPDATE app_variables SET interval_switch_ip = ? WHERE id = 1", (value,))
             self.__close()
         except Exception as e:
@@ -172,7 +178,8 @@ class Database:
     def manage_switch_data(self, data):
         update = False
         try:
-            self.__open()
+            if not self.db_open:
+                self.__open()
             self.cursor.execute("SELECT * FROM switches_list WHERE mac = ?", (data['mac'],))
 
             row = self.cursor.fetchone()
@@ -199,7 +206,8 @@ class Database:
     def manage_switch_link(self, link, datetime):
         update = False
         try:
-            self.__open()
+            if not self.db_open:
+                self.__open()
             self.cursor.execute("SELECT * FROM switch_links WHERE link = ?", (link,))
 
             row = self.cursor.fetchone()
@@ -218,7 +226,8 @@ class Database:
 
     def set_ipsubnet_data(self, data):
         try:
-            self.__open()
+            if not self.db_open:
+                self.__open()
             self.cursor.execute("SELECT * FROM ip_domain WHERE ip_subnet = ?", (data['ip_subnet'],))
             row = self.cursor.fetchone()
 
@@ -239,7 +248,8 @@ class Database:
     def set_admin_data(self, data):
         try:
             en = Encryption()
-            self.__open()
+            if not self.db_open:
+                self.__open()
             self.cursor.execute(
                 """INSERT INTO admin_data (
                         username,
@@ -258,7 +268,8 @@ class Database:
             sys.exit(1)
 
     def get_admin_data(self):
-        self.__open()
+        if not self.db_open:
+            self.__open()
         try:
             self.cursor.execute("SELECT * FROM admin_data")
             rows = self.cursor.fetchall()
@@ -269,7 +280,8 @@ class Database:
             sys.exit(1)
 
     def del_admin_data(self, username):
-        self.__open()
+        if not self.db_open:
+            self.__open()
         try:
             self.cursor.execute("DELETE FROM admin_data WHERE username = ?", (username,))
             self.__close()
@@ -281,7 +293,8 @@ class Database:
         try:
 
             en = Encryption()
-            self.__open()
+            if not self.db_open:
+                self.__open()
             self.cursor.execute("SELECT * FROM admin_data")
             rows = self.cursor.fetchall()
 
@@ -300,7 +313,8 @@ class Database:
     def set_dict_ipsubnet_data(self):
         #self.cr.log("core[]:App_DB{}:set_dict_ipsubnet_data()")
         try:
-            self.__open()
+            if not self.db_open:
+                self.__open()
             ip_subnet = {}
             self.cursor.execute("SELECT * FROM ip_domain")
             rows = self.cursor.fetchall()
@@ -320,7 +334,8 @@ class Database:
             sys.exit(1)
 
     def del_ipsubnet_data(self, ipsubnet):
-        self.__open()
+        if not self.db_open:
+            self.__open()
         try:
             self.cursor.execute("DELETE FROM ip_domain WHERE ip_subnet = ?", (ipsubnet,))
             self.__close()
@@ -330,7 +345,8 @@ class Database:
 
     def insert_ipdata(self, data:dict, sw_statuse:dict, date_time, edit_field):
         try:
-            self.__open()
+            if not self.db_open:
+                self.__open()
             for imsp in data.values():
                 self.cursor.execute("SELECT * FROM ip_data WHERE imsp = ?", (imsp,))
                 row = self.cursor.fetchone()
@@ -353,7 +369,8 @@ class Database:
     def insert_dnsdata(self, imsp, date_time):
         try:
             new_imsp = False
-            self.__open()
+            if not self.db_open:
+                self.__open()
             self.cursor.execute("SELECT * FROM dns_data WHERE imsp = ?", (imsp,))
             row = self.cursor.fetchone()
 
@@ -370,19 +387,22 @@ class Database:
             sys.exit(1)
 
     def databaseGetIpData(self):
-        self.__open()
+        if not self.db_open:
+            self.__open()
         self.cursor.execute("SELECT * FROM ip_data")
         return self.cursor.fetchall()
 
     def getDataFromIpDataTable(self, mini):
-        self.__open()
+        if not self.db_open:
+            self.__open()
         query = "SELECT * FROM ip_data WHERE imsp LIKE ? ORDER BY update_date DESC"
         self.cursor.execute(query, ('%' + mini + '%',))
         #self.__close()
         return self.cursor.fetchall()
 
     def dbRunSqlQuery(self, query):
-        self.__open()
+        if not self.db_open:
+            self.__open()
         # return self.cursor.execute(query)
 
         try:
@@ -405,3 +425,12 @@ class Database:
 
         except sqlite3.Error as e:
             return f"Database Error: {e}"
+        
+    def get_switch_statuses(self, duration):
+        if not self.db_open:
+            self.__open()
+        sql = f"SELECT * FROM sw_statuses WHERE CAST(unixt AS INTEGER) >= {duration}"
+        cursor = self.cursor.execute(sql)
+        columns = [column[0] for column in cursor.description]
+
+        return [dict(zip(columns, row)) for row in cursor.fetchall()]
