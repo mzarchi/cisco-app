@@ -366,6 +366,8 @@ class Core:
         result = ""
         switches = self.cf.all_switches
         dt = self.get_datetime()
+        switch_al = []
+        al = input("Do you get all link? (1:yes, 2:no) ")
 
         for i, ip in enumerate(switches):
             connect = self.__cnt(ip)
@@ -381,25 +383,36 @@ class Core:
                     with open(f"{self.cf.switchcdp_dir}{hostname}-CDP_{dt['date']}-{dt['time']}.txt", "a") as file:
                         file.write(content)
 
-                    # def write_result
                     wr_result = ""
                     for i in range(0, len(sw_text)):
                         sw_data = self.switch_data(sw_text[i])
-                        part_one = f"{self.__set_number()} - {Config.hostname+":":<30} {sw_data["ports"][0]:<25}"
+                        part_one = f"{Config.hostname+":":<30} {sw_data["ports"][0]:<25}"
                         part_two = f"{sw_data["device"]+":":<30} {sw_data["ports"][1]:<25}"
-                        link = f"{Config.hostname}-{sw_data["ports"][0]}|{sw_data["device"]}-{sw_data["ports"][1]}"
+                        link1 = f"{Config.hostname}-{sw_data["ports"][0]}|{sw_data["device"]}-{sw_data["ports"][1]}"
+                        link2 = f"{sw_data["device"]}-{sw_data["ports"][1]}|{Config.hostname}-{sw_data["ports"][0]}"
                         msl_dt = f"{dt['date']}-{dt['time']}"
-                        update = db.manage_switch_link(link, msl_dt)
-
-                        part_three = "Insert (New!)"
-                        if update:
-                            part_three = "Update"
-
-                        print(f"{part_one} ----> {part_two} {part_three}")
-                        wr_result += f"{part_one} ----> {part_two} {part_three}\n"
+                        
+                        if al == "1":
+                            update = db.manage_switch_link(link1, msl_dt)
+                            part_three = "Insert (New!)"
+                            if update:
+                                part_three = "Update"
+    
+                            print(f"{part_one} ----> {part_two} {part_three}")
+                            wr_result += f"{part_one} ----> {part_two} {part_three}\n"
+                            
+                        elif al == "2":
+                            if link1 not in switch_al and link2 not in switch_al:
+                                update = db.manage_switch_link(link1, msl_dt)
+                                switch_al.append(link1)
+                                part_three = "Insert (New!)"
+                                if update:
+                                    part_three = "Update"
+    
+                                print(f"{part_one} ----> {part_two} {part_three}")
+                                wr_result += f"{part_one} ----> {part_two} {part_three}\n"
 
                     result += wr_result
-
                 except Exception as e:
                     lg(type(e).__name__)
                     continue
@@ -841,6 +854,10 @@ class Core:
                                 ip_text_file += f"{line}\n"
                                 print(line)
                                 counter += 1
+            except KeyboardInterrupt as ki:
+                lg(type(ki).__name__)
+                break
+            
             except Exception as e:
                 lg(type(e).__name__)
                 pass
