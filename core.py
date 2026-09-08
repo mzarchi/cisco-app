@@ -26,11 +26,7 @@ class Core:
     def __init__(self):
         pass
 
-    def scan_network(self):
-        ip_subnet = Config.ssh_switch_range
-        network = ipaddress.ip_network(ip_subnet, strict=False)
-
-        def ping(ip):
+    def ping(self, ip):
             param = "-n" if platform.system().lower() == "windows" else "-c"
             command = ["ping", param, "1", ip]
             try:
@@ -43,10 +39,16 @@ class Core:
                 return None
             except Exception as e:
                 lg(f"{ip}:{type(e).__name__}")
+                return None
+            
+    def scan_network(self):
+        ip_subnet = Config.ssh_switch_range
+        network = ipaddress.ip_network(ip_subnet, strict=False)
+
+        
 
         with ThreadPoolExecutor(max_workers=50) as executor:
-            futures = [executor.submit(ping, str(host))
-                       for host in network.hosts()]
+            futures = [executor.submit(self.ping, str(host)) for host in network.hosts()]
             for future in futures:
                 result = future.result()
                 if result and result not in Config.all_switches:
@@ -203,6 +205,31 @@ class Core:
         return open_ports
 
     def switch_statuses(self):
+        msg_select_duration = "h. 1 Hour before\n"
+        msg_select_duration += "d. 1 Day before\n"
+        msg_select_duration += "w. 1 Week before\n"
+        msg_select_duration += "m. 1 Month before (30d ays)\n"
+        msg_select_duration += "Enter your choose: "
+        time_duration = input(msg_select_duration)
+        
+        start_search = 0
+        match time_duration:
+            case "h":
+                start_search = int(self.get_datetime()['unix']) - 3600
+                
+            case "d":
+                start_search = int(self.get_datetime()['unix']) - 86400
+                
+            case "w":
+                start_search = int(self.get_datetime()['unix']) - 604800
+                
+            case "w":
+                start_search = int(self.get_datetime()['unix']) - 2592000
+        
+        sw_data = self.db.get_switch_statuses(start_search)
+        with open("result.txt", "a") as file:
+            file.write(str(sw_data))
+        """_summary_
         self.ter_cls()
         connect_failed = 0
         user_special_ip = input("Enter Special Switch IP or Enter: ")
@@ -238,11 +265,13 @@ class Core:
                     break
                 else:
                     continue
+        """
         input("Press any key to exit ..")
     
-    def __get_switch_temp(self, ip: str, cnt: BaseConnection) -> int:
+    def __get_switch_temp(self, ip) -> int:
         int_value = 0
         try:
+            cnt = self.__cnt(ip)
             showenvall = cnt.send_command("show env all")
             if "FAULTY" in showenvall:
                 lg(f"ip: {ip}, Switch should be check!")
@@ -259,12 +288,13 @@ class Core:
             lg(f"ip: {ip}, Error: ReadTimeout")
             0
         except Exception as e:
-            lg(f"{type(e).__name__}, IP: {ip}")
+            lg(f"IP: {ip}, {type(e).__name__}")
 
         return int_value
 
-    def __get_switch_ram(self, cnt:BaseConnection) -> int:
+    def __get_switch_ram(self, ip) -> int:
         try:
+            cnt = self.__cnt(ip)
             showmemorystatistics = cnt.send_command("show memory statistics")
             pattern = r"^Processor\s+\S+\s+(\d+)\s+(\d+)\s+(\d+)"
             memory = re.search(pattern, showmemorystatistics, re.MULTILINE)
@@ -276,11 +306,12 @@ class Core:
                 
             return ram_percent
         except Exception as e:
-            lg(type(e).__name__)
+            lg(f"IP: {ip}, {type(e).__name__}")
             return 0
         
-    def __get_switch_cpu(self, cnt:BaseConnection) -> int:
+    def __get_switch_cpu(self, ip) -> int:
         try:
+            cnt = self.__cnt(ip)
             showprocesscpu = cnt.send_command("show processes cpu | include CPU")
             cpu = re.search(r"five minutes:\s*(\d+%)", showprocesscpu)
             five_minutes_cpu = 0
@@ -290,7 +321,7 @@ class Core:
             return five_minutes_cpu
         
         except Exception as e:
-            lg(type(e).__name__)
+            lg(f"IP: {ip}, {type(e).__name__}")
             return 0
         
         
@@ -696,22 +727,33 @@ class Core:
                 connect.enable()
                 self.sw_con.update({ip: {"obj": connect, "created": date_time, "used": date_time}})
                 return connect
-            except NetmikoTimeoutException as e:
-                # lg(f"{ip}:{type(e).__name__}") Ignored
+            
+            except NetmikoTimeoutException as nte:
+                # lg(f"{ip}:{type(nte).__name__}") Ignored
                 break
 
-            except NetMikoAuthenticationException as e:
-                # lg(f"{ip}:{type(e).__name__}") Ignored
+            except NetMikoAuthenticationException as nae:
+                # lg(f"{ip}:{type(nae).__name__}") Ignored
                 if auth_index < len(self.cf.auth_dict):
                     auth_index += 1
                     continue
                 else:
                     break
 
-            except ReadTimeout as e:
-                # lg(f"{ip}:{type(e).__name__}") Ignored
+            except ReadTimeout as rt:
+                # lg(f"{ip}:{type(rt).__name__}") Ignored
                 break
-
+            
+            except KeyError as ke:
+                lg(f"{ip}:{type(ke).__name__}")
+                del cons[ip]
+                #ip_ping = self.ping(ip)
+                #if ip_ping == ip:
+                #    ip_cnt = self.__cnt(ip)
+                #    cons.update({ip: ip_cnt})
+                break
+                
+                
             except Exception as e:
                 lg(f"{ip}:{type(e).__name__}")
 
@@ -839,9 +881,9 @@ class Core:
                         continue
 
                 connect_failed = 0
-                temp = self.__get_switch_temp(hip, connect)
-                cpu = self.__get_switch_cpu(connect)
-                ram = self.__get_switch_ram(connect)
+                temp = self.__get_switch_temp(hip)
+                cpu = self.__get_switch_cpu(hip)
+                ram = self.__get_switch_ram(hip)
                 sw_statuse_helper.update({"tmp":temp})
                 sw_statuse_helper.update({"cpu":cpu})
                 sw_statuse_helper.update({"ram":ram})
@@ -869,7 +911,7 @@ class Core:
                             imsp = f"{ip}|{mac}|{hip}|{port}"
                             ready_data.update({ip: imsp})
             except Exception as e:
-                lg(type(e).__name__)
+                lg(f"IP: {ip}, {type(e).__name__}")
                 if hip == switch_ips[-1]:
                     break
                 else:
