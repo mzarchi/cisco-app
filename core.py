@@ -16,12 +16,14 @@ import getpass
 import platform
 import ipaddress
 import subprocess
+import threading
 
 
 class Core:
     cf = Config()
     db = Database()
     sw_con = {}
+    sw_con_lock = threading.Lock()
 
     def __init__(self):
         pass
@@ -420,8 +422,6 @@ class Core:
         with open(f"{self.cf.switchlinks_dir}Switch-Links_{dt['date']}-{dt['time']}.txt", "a") as file:
             file.write(result)
 
-        self.cf.all_switches.clear()
-        self.sw_con.clear()
         Config.counter = 0
         input("Task finished! press Enter to continue ..")
         os.system('cls')
@@ -654,15 +654,21 @@ class Core:
 
     @method_logger
     def case_switch_scan(self):
-        print("Please wait *", end="")
         super_putty = []
         show_result_file = {}
         show_result_console = {}
         self.scan_network()
         dt = self.get_datetime()
+
+        total = len(Config.all_switches)
+        current = 0
+
         for ip in Config.all_switches:
+            current += 1
+            percent = int((current / total) * 100) if total > 0 else 0
+            print(f"\rPlease wait ({current}/{total}) {percent}%", end="", flush=True)
+
             try:
-                print("*", end="")
                 cnt = self.__cnt(ip)
                 version_data = cnt.send_command("show version")
                 self.find_hostname(version_data)
@@ -689,37 +695,38 @@ class Core:
                     show_result_file[model].append(uptime_line_file)
                 else:
                     show_result_file.update({model:[uptime_line_file]})
-                    
+
                 if model in show_result_console.keys():
                     show_result_console[model].append(uptime_line_console)
                 else:
                     show_result_console.update({model:[uptime_line_console]})
-               
 
                 super_putty.append(f'<SessionData SessionId="{self.cf.hostname}" SessionName="{self.cf.hostname}" ImageKey="computer" Host="{ip}" Port="22" Proto="SSH" PuttySession="Default Settings" Username="" ExtraArgs="" SPSLFileName="" RemotePath="" LocalPath="" />')
             except Exception as e:
                 lg(type(e).__name__)
                 continue
-        print()
-        for i in show_result_file.keys():
-            switch_list_file = show_result_file[i]
-            for lf in switch_list_file:
-                with open(f"{self.cf.switchlist_dir}Switches-List_{dt['date']}-{dt['time']}.txt", "a") as file:
-                    file.write(f"{lf} \n")
-            
-            switch_list_console = show_result_console[i]
-            for lc in switch_list_console:
-                print(lc)
-            print()
-            
-        with open(f"{self.cf.superputty_dir}super-putty_{dt['date']}-{dt['time']}.xml", "a") as file:
-            file.write('<?xml version="1.0" encoding="utf-8"?> \n')
-            file.write('<ArrayOfSessionData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"> \n')
-            for switch in super_putty:
-                file.write(f"  {switch} \n")
-            file.write('</ArrayOfSessionData> \n')
 
-        self.cf.all_switches.clear()
+        print()
+
+        all_file_lines = []
+        all_console_lines = []
+        for i in show_result_file.keys():
+            all_file_lines.extend(show_result_file[i])
+            all_console_lines.extend(show_result_console[i])
+
+        with open(f"{self.cf.switchlist_dir}Switches-List_{dt['date']}-{dt['time']}.txt", "a", encoding="utf-8") as file:
+            file.write("\n".join(all_file_lines) + "\n")
+
+        xml_lines = ['<?xml version="1.0" encoding="utf-8"?>',
+                     '<ArrayOfSessionData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">']
+        xml_lines.extend(f"  {switch}" for switch in super_putty)
+        xml_lines.append('</ArrayOfSessionData>')
+
+        with open(f"{self.cf.superputty_dir}super-putty_{dt['date']}-{dt['time']}.xml", "a", encoding="utf-8") as file:
+            file.write("\n".join(xml_lines) + "\n")
+
+        print("\n".join(all_console_lines))
+
         Config.counter = 0
         input("Press any key to exit ..")
 
@@ -736,16 +743,17 @@ class Core:
 
     def __cnt(self, ip):
         connect = None
-        cons = self.sw_con
         dt = self.get_datetime()
         date_time = f"{dt['psc']}"
-        if ip in cons.keys():
-            connect = cons[ip]['obj']
-            if connect.is_alive():
-                cons[ip]['used'] = date_time
-                return connect
-            else:
-                cons.pop(ip)
+
+        with self.sw_con_lock:
+            if ip in self.sw_con:
+                connect = self.sw_con[ip]['obj']
+                if connect.is_alive():
+                    self.sw_con[ip]['used'] = date_time
+                    return connect
+                else:
+                    self.sw_con.pop(ip)
 
         auth_index = 0
         while True:
@@ -760,7 +768,8 @@ class Core:
 
                 connect = ConnectHandler(**cisco_switch)
                 connect.enable()
-                self.sw_con.update({ip: {"obj": connect, "created": date_time, "used": date_time}})
+                with self.sw_con_lock:
+                    self.sw_con.update({ip: {"obj": connect, "created": date_time, "used": date_time}})
                 return connect
             
             except NetmikoTimeoutException as nte:
@@ -781,11 +790,9 @@ class Core:
             
             except KeyError as ke:
                 lg(f"{ip}:{type(ke).__name__}")
-                del cons[ip]
-                #ip_ping = self.ping(ip)
-                #if ip_ping == ip:
-                #    ip_cnt = self.__cnt(ip)
-                #    cons.update({ip: ip_cnt})
+                with self.sw_con_lock:
+                    if ip in self.sw_con:
+                        del self.sw_con[ip]
                 break
                 
                 
@@ -897,8 +904,6 @@ class Core:
                 with open(f"{self.cf.ips_dir}IP-List_{dt['date']}-{dt['time']}.txt", "a") as file:
                     file.write(ip_text_file)
                     
-        if did_scan:
-            self.cf.all_switches.clear()
         input("Press any key to exit ..")
 
     @method_logger
