@@ -47,3 +47,6 @@ class PeriodicWorker:
 
     def is_running(self) -> bool:
         return self._thread is not None and self._thread.is_alive()
+
+    def set_interval(self, new_interval: int) -> None:
+        self.interval = new_interval

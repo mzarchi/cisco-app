@@ -22,6 +22,7 @@ app_state = {
 }
 
 state_lock = threading.Lock()
+state_changed = threading.Event()
 
 
 def get_worker_state():
@@ -35,6 +36,7 @@ def get_worker_state():
 def run_switch_ips_worker():
     with state_lock:
         app_state["worker_status"] = "Running"
+    state_changed.set()
 
     try:
         cr.switch_ips_worker()
@@ -42,11 +44,13 @@ def run_switch_ips_worker():
     except Exception as error:
         with state_lock:
             app_state["worker_status"] = f"Error: {error}"
+        state_changed.set()
 
     else:
         with state_lock:
             app_state["last_worker_run"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             app_state["worker_status"] = "Completed"
+        state_changed.set()
 
 
 def clear_console():
@@ -55,28 +59,22 @@ def clear_console():
 
 def get_menu_input():
     command = ""
-    last_refresh_time = 0
+
+    def draw():
+        clear_console()
+        last_worker_run, worker_status = get_worker_state()
+        print(
+            cr.show_menu(
+                last_worker_run=last_worker_run,
+                worker_status=worker_status
+            ),
+            end=""
+        )
+        print(command, end="", flush=True)
+
+    draw()
 
     while True:
-        current_time = time.monotonic()
-
-        if current_time - last_refresh_time >= 10:
-            clear_console()
-
-            last_worker_run, worker_status = get_worker_state()
-
-            print(
-                cr.show_menu(
-                    last_worker_run=last_worker_run,
-                    worker_status=worker_status
-                ),
-                end=""
-            )
-
-            print(command, end="", flush=True)
-
-            last_refresh_time = current_time
-
         if msvcrt.kbhit():
             key = msvcrt.getwch()
 
@@ -94,19 +92,11 @@ def get_menu_input():
             elif key.isprintable():
                 command += key
 
-            clear_console()
+            draw()
 
-            last_worker_run, worker_status = get_worker_state()
-
-            print(
-                cr.show_menu(
-                    last_worker_run=last_worker_run,
-                    worker_status=worker_status
-                ),
-                end=""
-            )
-
-            print(command, end="", flush=True)
+        if state_changed.is_set():
+            state_changed.clear()
+            draw()
 
         time.sleep(0.05)
 
@@ -115,7 +105,8 @@ cf = Config()
 db = Database()
 cr = Core()
 
-switch_ips_worker_interval = db.get_app_variables()[1]
+interval_row = db.get_app_variables()
+switch_ips_worker_interval = interval_row[1] if interval_row else "240"
 
 cr.show_banner()
 
@@ -135,8 +126,26 @@ ip_refresh_worker = PeriodicWorker(
 ip_refresh_worker.start()
 
 
+def interval_watcher():
+    while True:
+        if Config.interval_changed_flag:
+            Config.interval_changed_flag = False
+            new_interval = db.get_app_variables()[1]
+            ip_refresh_worker.set_interval(int(new_interval))
+        time.sleep(0.5)
+
+
+interval_watcher_thread = threading.Thread(
+    target=interval_watcher,
+    daemon=True,
+    name="IntervalWatcherThread"
+)
+interval_watcher_thread.start()
+
+
 while True:
     switch = get_menu_input()
+    switch = switch.lower()
 
     match switch:
         case "0":

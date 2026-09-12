@@ -223,7 +223,7 @@ class Core:
             case "w":
                 start_search = int(self.get_datetime()['unix']) - 604800
                 
-            case "w":
+            case "m":
                 start_search = int(self.get_datetime()['unix']) - 2592000
         
         sw_data = self.db.get_switch_statuses(start_search)
@@ -384,10 +384,10 @@ class Core:
                         file.write(content)
 
                     wr_result = ""
-                    for i in range(0, len(sw_text)):
-                        sw_data = self.switch_data(sw_text[i])
-                        part_one = f"{Config.hostname+":":<30} {sw_data["ports"][0]:<25}"
-                        part_two = f"{sw_data["device"]+":":<30} {sw_data["ports"][1]:<25}"
+                    for j in range(0, len(sw_text)):
+                        sw_data = self.switch_data(sw_text[j])
+                        part_one = f"{Config.hostname + ':':<30} {sw_data['ports'][0]:<25}"
+                        part_two = f"{sw_data['device'] + ':':<30} {sw_data['ports'][1]:<25}"
                         link1 = f"{Config.hostname}-{sw_data["ports"][0]}|{sw_data["device"]}-{sw_data["ports"][1]}"
                         link2 = f"{sw_data["device"]}-{sw_data["ports"][1]}|{Config.hostname}-{sw_data["ports"][0]}"
                         msl_dt = f"{dt['date']}-{dt['time']}"
@@ -420,9 +420,9 @@ class Core:
         with open(f"{self.cf.switchlinks_dir}Switch-Links_{dt['date']}-{dt['time']}.txt", "a") as file:
             file.write(result)
 
-        switches.clear()
+        self.cf.all_switches.clear()
+        self.sw_con.clear()
         Config.counter = 0
-        Config.all_switches.clear()
         input("Task finished! press Enter to continue ..")
         os.system('cls')
 
@@ -566,6 +566,7 @@ class Core:
                     new_value = input(f"Enter a switch_ips_worker interval (current:{data[1]}s, e:exit): ")
                     if new_value != "e":
                         self.db.set_app_variables(new_value)
+                        Config.interval_changed_flag = True
 
                 case "4":
                     self.ter_cls()
@@ -653,12 +654,15 @@ class Core:
 
     @method_logger
     def case_switch_scan(self):
+        print("Please wait *", end="")
         super_putty = []
+        show_result_file = {}
+        show_result_console = {}
         self.scan_network()
         dt = self.get_datetime()
-        counter = 1
-        for ip in (Config.all_switches):
+        for ip in Config.all_switches:
             try:
+                print("*", end="")
                 cnt = self.__cnt(ip)
                 version_data = cnt.send_command("show version")
                 self.find_hostname(version_data)
@@ -679,19 +683,35 @@ class Core:
                 }
                 update = self.db.manage_switch_data(data)
                 update_msg = "update" if update else "insert (New!)"
-                uptime_line_file = f"{counter:<3}- Hostname: {self.cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<4} d, {hours:<2} h, {minutes:<2} m, real-ports: {ports:<3} IOS-version: {ios_version:<15} IOS-type: {ios_type:<25} Action: {update_msg}"
-                uptime_line_console = f"{counter:<3}- Hostname: {self.cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<4} d, {hours:<2} h, {minutes:<2} m, Action: {update_msg}"
-                counter += 1
-                # uptime_line = f"{counter:<3}- Hostname: {self.cf.hostname:<30} Uptime: {days:<3} d, {hours:<2} h, {minutes:<2} m"
-                with open(f"{self.cf.switchlist_dir}Switches-List_{dt['date']}-{dt['time']}.txt", "a") as file:
-                    file.write(f"{uptime_line_file} \n")
+                uptime_line_file = f"Hostname: {self.cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<4} d, {hours:<2} h, {minutes:<2} m, real-ports: {ports:<3} IOS-version: {ios_version:<15} IOS-type: {ios_type:<25} Action: {update_msg}"
+                uptime_line_console = f"Hostname: {self.cf.hostname:<30} Model: {model:<20} Mac-Address: {sw_mac:<20} Uptime: {days:<4} d, {hours:<2} h, {minutes:<2} m, Action: {update_msg}"
+                if model in show_result_file.keys():
+                    show_result_file[model].append(uptime_line_file)
+                else:
+                    show_result_file.update({model:[uptime_line_file]})
+                    
+                if model in show_result_console.keys():
+                    show_result_console[model].append(uptime_line_console)
+                else:
+                    show_result_console.update({model:[uptime_line_console]})
+               
 
                 super_putty.append(f'<SessionData SessionId="{self.cf.hostname}" SessionName="{self.cf.hostname}" ImageKey="computer" Host="{ip}" Port="22" Proto="SSH" PuttySession="Default Settings" Username="" ExtraArgs="" SPSLFileName="" RemotePath="" LocalPath="" />')
-                print(uptime_line_console)
             except Exception as e:
                 lg(type(e).__name__)
                 continue
-
+        print()
+        for i in show_result_file.keys():
+            switch_list_file = show_result_file[i]
+            for lf in switch_list_file:
+                with open(f"{self.cf.switchlist_dir}Switches-List_{dt['date']}-{dt['time']}.txt", "a") as file:
+                    file.write(f"{lf} \n")
+            
+            switch_list_console = show_result_console[i]
+            for lc in switch_list_console:
+                print(lc)
+            print()
+            
         with open(f"{self.cf.superputty_dir}super-putty_{dt['date']}-{dt['time']}.xml", "a") as file:
             file.write('<?xml version="1.0" encoding="utf-8"?> \n')
             file.write('<ArrayOfSessionData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"> \n')
@@ -699,6 +719,8 @@ class Core:
                 file.write(f"  {switch} \n")
             file.write('</ArrayOfSessionData> \n')
 
+        self.cf.all_switches.clear()
+        Config.counter = 0
         input("Press any key to exit ..")
 
     def get_ios_details(self, text):
@@ -769,6 +791,7 @@ class Core:
                 
             except Exception as e:
                 lg(f"{ip}:{type(e).__name__}")
+                break
 
     def get_dns_name(self, ip):
         result = "None"
@@ -788,8 +811,10 @@ class Core:
         ready_data = {}
         switch_ips = []
         user_special_ip = input("Enter Special Switch IP or Enter: ")
+        did_scan = False
         if user_special_ip == "":
             self.scan_network()
+            did_scan = True
             switch_ips = self.cf.all_switches
         else:
             switch_ips.append(user_special_ip)
@@ -863,7 +888,7 @@ class Core:
                 pass
 
         if dns_mode == False:
-            self.db.insert_ipdata(ready_data, date_time, dt['dati'])
+            self.db.insert_ipdata(ready_data, {}, date_time, dt['dati'])
         if connect_failed < 3:
             if dns_mode:
                 with open(f"{self.cf.recordDNS_dir}IP-DNS_{dt['date']}-{dt['time']}.txt", "a") as file:
@@ -871,7 +896,9 @@ class Core:
             else:
                 with open(f"{self.cf.ips_dir}IP-List_{dt['date']}-{dt['time']}.txt", "a") as file:
                     file.write(ip_text_file)
-        self.cf.all_switches.clear()
+                    
+        if did_scan:
+            self.cf.all_switches.clear()
         input("Press any key to exit ..")
 
     @method_logger
@@ -928,7 +955,7 @@ class Core:
                             imsp = f"{ip}|{mac}|{hip}|{port}"
                             ready_data.update({ip: imsp})
             except Exception as e:
-                lg(f"IP: {ip}, {type(e).__name__}")
+                lg(f"IP: {hip}, {type(e).__name__}")
                 if hip == switch_ips[-1]:
                     break
                 else:
@@ -1257,7 +1284,8 @@ class Core:
                         with open(f"{self.cf.logs_dir}{dt['unix']}-sw{ip}.txt", "a") as file:
                             file.write(nfind_str)
 
-                        txt_helper = f"ip: {ip:<18}, Model: {model:<20}, Count {len(nfind):<4}, Cases: {", ".join(f"{item:<3}" for item in nfind)}"
+                        cases_str = ", ".join(f"{item:<3}" for item in nfind)
+                        txt_helper = f"ip: {ip:<18}, Model: {model:<20}, Count {len(nfind):<4}, Cases: {cases_str}"
                         txt_result += f"{txt_helper}\n"
                         print(txt_helper)
 
@@ -1303,7 +1331,8 @@ class Core:
                         with open(f"{self.cf.logs_dir}{dt['unix']}-sw{ip}.txt", "a") as file:
                             file.write(nfind_str)
 
-                        txt_helper = f"ip: {ip:<18}, Model: {model:<20}, Count {len(nfind):<4}, Cases: {", ".join(f"{item:<3}" for item in nfind)}"
+                        cases_str = ", ".join(f"{item:<3}" for item in nfind)
+                        txt_helper = f"ip: {ip:<18}, Model: {model:<20}, Count {len(nfind):<4}, Cases: {cases_str}"
                         txt_result += f"{txt_helper}\n"
                         print(txt_helper)
 
@@ -1375,7 +1404,7 @@ class Core:
                                         print(f"{ip:15} - {key} already set!")
                         connect.save_config()
 
-                case ("set", "switch", "-", "all"):
+                case ("set", "switch", "-", "new"):
                     if funcs[4] == "all":
                         self.scan_network()
                         all_ip = self.cf.all_switches

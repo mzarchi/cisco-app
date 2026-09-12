@@ -10,7 +10,7 @@ class Config:
     all_switches = []
     COMMON_PORTS = [21, 22, 23, 67, 68, 80, 443]
     db_dir = ""
-    root_dir = sys.argv[0].replace("main.py", "")
+    root_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     data_dir = ""
     config_dir = ""
     switchconfig_dir = ""
@@ -27,6 +27,8 @@ class Config:
     ssh_switch_range = ""
     auth_dict = {}
     mk = []
+    interval_changed_flag = False
+
     banner = """
    █████████   ███                                 █████████                      
   ███░░░░░███ ░░░                                 ███░░░░░███                     

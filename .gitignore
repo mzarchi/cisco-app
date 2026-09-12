@@ -4,6 +4,7 @@ __*
 *test*
 .venv
 build/
+dist/
 pilot*
 local*
 *.spec

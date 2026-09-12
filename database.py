@@ -18,7 +18,7 @@ class Database:
             self.create_tables()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-__init__: {e}")
-            sys.exit(1)
+            return False
 
     def __open(self):
         try:
@@ -28,7 +28,7 @@ class Database:
             self.db_open = True
         except Exception as e:
             print(f"- F-core, C-App_DB, D-__open: {e}")
-            sys.exit(1)
+            return False
 
     def __close(self):
         try:
@@ -37,7 +37,7 @@ class Database:
             self.db_open = False
         except Exception as e:
             print(f"- F-core, C-App_DB, D-__close: {e}")
-            sys.exit(1)
+            return False
 
     def create_tables(self):
         try:
@@ -116,7 +116,7 @@ class Database:
             self.init_app_variables()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-create_tables: {e}")
-            sys.exit(1)
+            return False
 
     def init_app_variables(self):
         if not self.db_open:
@@ -136,7 +136,8 @@ class Database:
             self.__close()
             return row
         except Exception as e:
-            pass
+            print(f"- F-core, C-App_DB, D-get_app_variables: {e}")
+            return (1, "240")
         
     def set_app_variables(self, value):
         try:
@@ -173,7 +174,7 @@ class Database:
                 ))
         except Exception as e:
             print(f"- F-core, C-App_DB, D-insert_switch_data: {e}")
-            sys.exit(1)
+            return False
 
     def manage_switch_data(self, data):
         update = False
@@ -192,7 +193,7 @@ class Database:
             self.__close()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-manage_switch_link: {e}")
-            sys.exit(1)
+            return False
 
         return update
 
@@ -201,7 +202,7 @@ class Database:
             self.cursor.execute("INSERT INTO switch_links (link, insert_date, update_date) VALUES (?, ?, ?)", (link, datetime, datetime))
         except Exception as e:
             print(f"- F-core, C-App_DB, D-insert_switch_link: {e}")
-            sys.exit(1)
+            return False
 
     def manage_switch_link(self, link, datetime):
         update = False
@@ -220,7 +221,7 @@ class Database:
             self.__close()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-manage_switch_link: {e}")
-            sys.exit(1)
+            return False
 
         return update
 
@@ -243,7 +244,7 @@ class Database:
             self.__close()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-set_ipsubnet_data: {e}")
-            sys.exit(1)
+            return False
 
     def set_admin_data(self, data):
         try:
@@ -265,7 +266,7 @@ class Database:
             self.__close()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-set_admin_data: {e}")
-            sys.exit(1)
+            return False
 
     def get_admin_data(self):
         if not self.db_open:
@@ -277,7 +278,7 @@ class Database:
             return rows
         except Exception as e:
             print(f"- F-core, C-App_DB, D-get_admin_data: {e}")
-            sys.exit(1)
+            return False
 
     def del_admin_data(self, username):
         if not self.db_open:
@@ -287,7 +288,7 @@ class Database:
             self.__close()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-del_admin_data: {e}")
-            sys.exit(1)
+            return False
 
     def set_dict_admin_data(self):
         try:
@@ -308,30 +309,31 @@ class Database:
 
         except Exception as e:
             print(f"- F-core, C-App_DB, D-set_dict_admin_data: {e}")
-            sys.exit(1)
+            return False
 
     def set_dict_ipsubnet_data(self):
-        #self.cr.log("core[]:App_DB{}:set_dict_ipsubnet_data()")
-        try:
-            if not self.db_open:
-                self.__open()
-            ip_subnet = {}
-            self.cursor.execute("SELECT * FROM ip_domain")
-            rows = self.cursor.fetchall()
+            try:
+                if not self.db_open:
+                    self.__open()
+                ip_subnet = {}
+                self.cursor.execute("SELECT * FROM ip_domain")
+                rows = self.cursor.fetchall()
 
-            for i, row in enumerate(rows):
-                Config.ssh_switch_range = row[1]
-                Config.domain = row[2]
+                for i, row in enumerate(rows):
+                    ip_subnet.update({i: {
+                        "ip_subnet": row[1],
+                        "domain": row[2],
+                    }})
 
-                ip_subnet.update({i: {
-                    "ip_subnet": row[1],
-                    "domain": row[2],
-                }})
+                if rows:
+                    Config.ssh_switch_range = rows[0][1]
+                    Config.domain = rows[0][2]
 
-            return ip_subnet
-        except Exception as e:
-            print(f"- F-core, C-App_DB, D-set_dict_ipsubnet_data: {e}")
-            sys.exit(1)
+                self.__close()
+                return ip_subnet
+            except Exception as e:
+                print(f"- F-core, C-App_DB, D-set_dict_ipsubnet_data: {e}")
+                return False
 
     def del_ipsubnet_data(self, ipsubnet):
         if not self.db_open:
@@ -341,7 +343,7 @@ class Database:
             self.__close()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-del_ipsubnet_data: {e}")
-            sys.exit(1)
+            return False
 
     def insert_ipdata(self, data:dict, sw_statuse:dict, date_time, edit_field):
         try:
@@ -364,7 +366,7 @@ class Database:
             self.__close()
         except Exception as e:
             print(f"- F-core, C-App_DB, D-insert_ipdata_worker: {e}")
-            sys.exit(1)
+            return False
             
     def insert_dnsdata(self, imsp, date_time):
         try:
@@ -384,21 +386,24 @@ class Database:
             return new_imsp
         except Exception as e:
             print(f"- F-core, C-App_DB, D-insert_ipdata: {e}")
-            sys.exit(1)
+            return False
 
     def databaseGetIpData(self):
         if not self.db_open:
             self.__open()
         self.cursor.execute("SELECT * FROM ip_data")
-        return self.cursor.fetchall()
+        rows = self.cursor.fetchall()
+        self.__close()
+        return rows
 
     def getDataFromIpDataTable(self, mini):
         if not self.db_open:
             self.__open()
         query = "SELECT * FROM ip_data WHERE imsp LIKE ? ORDER BY update_date DESC"
         self.cursor.execute(query, ('%' + mini + '%',))
-        #self.__close()
-        return self.cursor.fetchall()
+        rows = self.cursor.fetchall()
+        self.__close()
+        return rows
 
     def dbRunSqlQuery(self, query):
         if not self.db_open:
@@ -432,5 +437,6 @@ class Database:
         sql = f"SELECT * FROM sw_statuses WHERE CAST(unixt AS INTEGER) >= {duration}"
         cursor = self.cursor.execute(sql)
         columns = [column[0] for column in cursor.description]
-
-        return [dict(zip(columns, row)) for row in cursor.fetchall()]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        self.__close()
+        return rows
