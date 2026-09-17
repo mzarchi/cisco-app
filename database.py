@@ -431,10 +431,10 @@ class Database:
         except sqlite3.Error as e:
             return f"Database Error: {e}"
         
-    def get_switch_statuses(self, duration):
+    def get_switch_statuses(self, duration, sw_ip):
         if not self.db_open:
             self.__open()
-        sql = f"SELECT * FROM sw_statuses WHERE CAST(unixt AS INTEGER) >= {duration}"
+        sql = f"SELECT * FROM sw_statuses WHERE sw_ip = '{sw_ip}' AND CAST(unixt AS INTEGER) >= {duration}"
         cursor = self.cursor.execute(sql)
         columns = [column[0] for column in cursor.description]
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
