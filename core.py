@@ -164,7 +164,7 @@ class Core:
     def show_banner(self):
         print(Config.banner)
         message = f"Developer: github/mzarchi, Open-Source project\n"
-        message += "First-Commit: G0-2508, version: G173-2608\n" # G{CommitsCounts}-{YYMM}
+        message += "First-Commit: G0-2508, version: G190-2609\n" # G{CommitsCounts}-{YYMM}
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
         message += "I always live in the depths of the Internet ❤️"
@@ -210,38 +210,43 @@ class Core:
         return open_ports
 
     def switch_statuses(self):
-        msg_select_duration = "h. 1 Hour before\n"
-        msg_select_duration += "d. 1 Day before\n"
-        msg_select_duration += "w. 1 Week before\n"
-        msg_select_duration += "m. 1 Month before (30 days)\n"
-        msg_select_duration += "y. 1 Month before (365 days)\n"
-        msg_select_duration += "Enter your choose: "
-        time_duration = input(msg_select_duration)
-        
-        start_search = 0
-        match time_duration:
-            case "h":
-                start_search = int(self.get_datetime()['unix']) - 3600
-                
-            case "d":
-                start_search = int(self.get_datetime()['unix']) - 86400
-                
-            case "w":
-                start_search = int(self.get_datetime()['unix']) - 604800
-                
-            case "m":
-                start_search = int(self.get_datetime()['unix']) - 2592000
-                
-            case "y":
-                start_search = int(self.get_datetime()['unix']) - 31536000
-        
         while True:
-            sw_ip = input("Enter your Switch IP (e: exit): ")
-            if sw_ip == "e":
-                break
+            msg_select_duration = "h. 1 Hour before\n"
+            msg_select_duration += "d. 1 Day before\n"
+            msg_select_duration += "w. 1 Week before\n"
+            msg_select_duration += "m. 1 Month before (30 days)\n"
+            msg_select_duration += "y. 1 Month before (365 days)\n"
+            msg_select_duration += "b. back\n"
+            msg_select_duration += "Enter your choose: "
+            time_duration = input(msg_select_duration)
             
-            sw_data = self.db.get_switch_statuses(start_search, sw_ip)
-            self.plot_envelope(sw_data)
+            start_search = 0
+            match time_duration:
+                case "h":
+                    start_search = int(self.get_datetime()['unix']) - 3600
+                    
+                case "d":
+                    start_search = int(self.get_datetime()['unix']) - 86400
+                    
+                case "w":
+                    start_search = int(self.get_datetime()['unix']) - 604800
+                    
+                case "m":
+                    start_search = int(self.get_datetime()['unix']) - 2592000
+                    
+                case "y":
+                    start_search = int(self.get_datetime()['unix']) - 31536000
+                    
+                case "b":
+                    break
+            
+            while True:
+                sw_ip = input("Enter your Switch IP (b: back): ")
+                if sw_ip == "b":
+                    break
+                
+                sw_data = self.db.get_switch_statuses(start_search, sw_ip)
+                self.plot_envelope(sw_data)
             
     
     def plot_envelope(self, sw_data):
