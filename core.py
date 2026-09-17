@@ -18,6 +18,9 @@ import ipaddress
 import subprocess
 import threading
 
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 
 class Core:
     cf = Config()
@@ -210,7 +213,8 @@ class Core:
         msg_select_duration = "h. 1 Hour before\n"
         msg_select_duration += "d. 1 Day before\n"
         msg_select_duration += "w. 1 Week before\n"
-        msg_select_duration += "m. 1 Month before (30d ays)\n"
+        msg_select_duration += "m. 1 Month before (30 days)\n"
+        msg_select_duration += "y. 1 Month before (365 days)\n"
         msg_select_duration += "Enter your choose: "
         time_duration = input(msg_select_duration)
         
@@ -227,48 +231,141 @@ class Core:
                 
             case "m":
                 start_search = int(self.get_datetime()['unix']) - 2592000
-        
-        sw_data = self.db.get_switch_statuses(start_search)
-        with open("result.txt", "a") as file:
-            file.write(str(sw_data))
-        """_summary_
-        self.ter_cls()
-        connect_failed = 0
-        user_special_ip = input("Enter Special Switch IP or Enter: ")
-        switch_ips = []
-        if user_special_ip == "":
-            self.scan_network()
-            switch_ips = self.cf.all_switches
-        else:
-            switch_ips.append(user_special_ip)
-
-        for hip in switch_ips:
-            try:
-                connect = self.__cnt(hip)
-                if connect is None:
-                    connect_failed += 1
-                    if connect_failed == 3:
-                        break
-                    else:
-                        continue
-                connect_failed = 0
                 
-                result_text = ""
-                temperature = f"{self.__get_switch_temp(connect)}°C"
-                result_text += f"- {hip:<15} Temp: {temperature:<5} "
-                ram_percent = f"{int(self.__get_switch_ram(connect))}%"
-                result_text += f"RAM: {ram_percent:<4} "
-                result_text += f"CPU: {self.__get_switch_cpu(connect):<2}% "
-                print(result_text)
-
-            except Exception as e:
-                lg(f"{hip}: {type(e).__name__}")
-                if hip == switch_ips[-1]:
-                    break
-                else:
-                    continue
-        """
-        input("Press any key to exit ..")
+            case "y":
+                start_search = int(self.get_datetime()['unix']) - 31536000
+        
+        while True:
+            sw_ip = input("Enter your Switch IP (e: exit): ")
+            if sw_ip == "e":
+                break
+            
+            sw_data = self.db.get_switch_statuses(start_search, sw_ip)
+            self.plot_envelope(sw_data)
+            
+    
+    def plot_envelope(self, sw_data):
+        df = pd.DataFrame(sw_data)
+        df["value"] = pd.to_numeric(df["value"], errors="coerce")
+        df["unixt"] = pd.to_numeric(df["unixt"], errors="coerce")
+        df = df.dropna(subset=["unixt", "value"])
+        df = df[df["value"] > 0]
+        
+        df["datetime"] = pd.to_datetime(df["unixt"], unit="s")
+        df["hour_float"] = (
+            df["datetime"].dt.hour
+            + df["datetime"].dt.minute / 60
+            + df["datetime"].dt.second / 3600
+        )
+        
+        all_ips = sorted(df["sw_ip"].unique())
+        if len(all_ips) == 1:
+            ip_display = all_ips[0]
+        else:
+            ip_display = ", ".join(all_ips)
+        
+        params = [
+            ("temp", "Temperature (°C)", "red", "blue"),
+            ("cpu",  "CPU (%)",          "darkred", "darkblue"),
+            ("ram",  "RAM (%)",          "darkred", "darkblue"),
+        ]
+        
+        for pname, ylabel, max_color, min_color in params:
+            sub = df[df["pname"] == pname].copy()
+            
+            if sub.empty:
+                continue
+            
+            sub["time_bin"] = (sub["hour_float"] * 10).round() / 10
+            envelope = sub.groupby("time_bin")["value"].agg(["min", "max"]).reset_index()
+            envelope = envelope.sort_values("time_bin")
+            
+            global_max = envelope["max"].max()
+            global_min = envelope["min"].min()
+            
+            fig, ax = plt.subplots(figsize=(12, 6))
+            
+            for sw_ip in all_ips:
+                sw_ip_data = sub[sub["sw_ip"] == sw_ip].sort_values("hour_float")
+                ax.plot(
+                    sw_ip_data["hour_float"],
+                    sw_ip_data["value"],
+                    marker="o",
+                    markersize=1,
+                    linestyle="none",
+                    alpha=0.5
+                )
+            
+            ax.plot(
+                envelope["time_bin"],
+                envelope["max"],
+                color=max_color,
+                linewidth=1.0,
+                linestyle="-",
+                label=f"Max {pname} ({global_max:.1f})",
+                zorder=5
+            )
+            
+            ax.plot(
+                envelope["time_bin"],
+                envelope["min"],
+                color=min_color,
+                linewidth=1.0,
+                linestyle="-",
+                label=f"Min {pname} ({global_min:.1f})",
+                zorder=5
+            )
+            
+            ax.set_xlim(0, 24)
+            ax.set_ylim(0, 100)
+            
+            ax.set_xlabel("Hour of Day", fontsize=12, fontweight="bold", labelpad=10)
+            ax.set_ylabel(ylabel, fontsize=12, fontweight="bold", labelpad=10)
+            
+            ax.set_title(
+                f"CiscoApp {pname.upper()} Envelope Plot",
+                fontsize=18,
+                fontweight="bold",
+                pad=20
+            )
+            
+            now = datetime.now()
+            subtitle_text = f"Switch Graph {ip_display}  ({now.strftime('%Y-%m-%d %H:%M:%S')})"
+            fig.text(
+                0.5, 0.02,
+                subtitle_text,
+                ha="center",
+                va="bottom",
+                fontsize=11,
+                color="#444444",
+                style="italic"
+            )
+            
+            ax.yaxis.set_major_locator(MultipleLocator(10))
+            ax.yaxis.set_minor_locator(MultipleLocator(1))
+            
+            ax.xaxis.set_major_locator(MultipleLocator(1))
+            ax.xaxis.set_minor_locator(MultipleLocator(0.1))
+            
+            x_ticks = list(range(0, 25))
+            x_labels = [str(h) if h <= 23 else "" for h in x_ticks]
+            ax.set_xticks(x_ticks)
+            ax.set_xticklabels(x_labels)
+            
+            ax.grid(True, which="major", axis="y", alpha=0.5, linewidth=0.9,
+                    color="#555555", linestyle="--")
+            ax.grid(True, which="minor", axis="y", alpha=0.2, linewidth=0.7,
+                    color="#999999", linestyle="--")
+            ax.grid(True, which="major", axis="x", alpha=0.4, linewidth=0.8,
+                    color="#666666", linestyle="--")
+            ax.grid(True, which="minor", axis="x", alpha=0.12, linewidth=0.5,
+                    color="#AAAAAA", linestyle="--")
+            
+            ax.tick_params(axis="both", which="both", length=0)
+            ax.legend(loc="upper right", fontsize=9)
+            plt.tight_layout(rect=[0, 0.05, 1, 1])
+        
+        plt.show()
     
     def __get_switch_temp(self, ip) -> int:
         int_value = 0
