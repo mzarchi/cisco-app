@@ -11,7 +11,7 @@ import threading
 import time
 
 
-ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp vG173-2608")
+ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp vG192-2609")
 
 
 startup_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -48,7 +48,8 @@ def run_switch_ips_worker():
 
     else:
         with state_lock:
-            app_state["last_worker_run"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            app_state["last_worker_run"] = datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S")
             app_state["worker_status"] = "Completed"
         state_changed.set()
 
@@ -156,7 +157,7 @@ while True:
 
         case "2":
             cr.case_switch_scan()
-            
+
         case "3":
             cr.switch_statuses()
 
@@ -192,6 +193,6 @@ while True:
             break
 
 '''
-pyinstaller --onefile --icon=icon/cisco-app.ico --version-file="version_info.txt" --name=Cisco-App_vG173-2608 main.py
+pyinstaller --onefile --icon=icon/cisco-app.ico --version-file="version_info.txt" --name=Cisco-App_vG192-2609 main.py
 git rev-list --count HEAD
 '''
