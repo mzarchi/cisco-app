@@ -1,11 +1,13 @@
 from config import Config
+from zoneinfo import ZoneInfo
 from datetime import datetime
 from database import Database
 from encrypt import Encryption
-from netmiko import ConnectHandler, NetmikoTimeoutException, NetMikoAuthenticationException, ReadTimeout
 from decorators import method_logger, lg
-from netmiko.base_connection import BaseConnection
+from matplotlib.ticker import MultipleLocator
 from concurrent.futures import ThreadPoolExecutor
+from netmiko.base_connection import BaseConnection
+from netmiko import ConnectHandler, NetmikoTimeoutException, NetMikoAuthenticationException, ReadTimeout
 
 import os
 import re
@@ -17,10 +19,9 @@ import platform
 import ipaddress
 import subprocess
 import threading
-
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MultipleLocator
+
 
 class Core:
     cf = Config()
@@ -141,15 +142,6 @@ class Core:
                     (uptime['weeks'] * 7) + uptime['days']
                 return all_days, uptime['hours'], uptime['minutes']
 
-    def __set_number(self):
-        Config.counter += 1
-        result = Config.counter
-        if result > 0 and result < 10:
-            result = f"00{result}"
-        elif result >= 10 and result < 100:
-            result = f"0{result}"
-        return result
-
     def get_current_text(self, prompt, text=True):
         while True:
             if text:
@@ -210,21 +202,19 @@ class Core:
         return open_ports
 
     def switch_statuses(self):
+        self.ter_cls()
         while True:
-            msg_select_duration = "h. 1 Hour before\n"
-            msg_select_duration += "d. 1 Day before\n"
-            msg_select_duration += "w. 1 Week before\n"
-            msg_select_duration += "m. 1 Month before (30 days)\n"
-            msg_select_duration += "y. 1 Month before (365 days)\n"
-            msg_select_duration += "b. back\n"
+            msg_select_duration = "List of time range:\n"
+            msg_select_duration += "\td. 1 Day before\n"
+            msg_select_duration += "\tw. 1 Week before\n"
+            msg_select_duration += "\tm. 1 Month before (30 days)\n"
+            msg_select_duration += "\ty. 1 Month before (365 days)\n"
+            msg_select_duration += "\tb. back\n"
             msg_select_duration += "Enter your choose: "
             time_duration = input(msg_select_duration)
             
             start_search = 0
             match time_duration:
-                case "h":
-                    start_search = int(self.get_datetime()['unix']) - 3600
-                    
                 case "d":
                     start_search = int(self.get_datetime()['unix']) - 86400
                     
@@ -240,23 +230,33 @@ class Core:
                 case "b":
                     break
             
+            self.ter_cls()
             while True:
                 sw_ip = input("Enter your Switch IP (b: back): ")
                 if sw_ip == "b":
                     break
                 
                 sw_data = self.db.get_switch_statuses(start_search, sw_ip)
+                if not sw_data:
+                    input("No Data found, press any key to continue ..")
+                    continue
                 self.plot_envelope(sw_data)
             
     
     def plot_envelope(self, sw_data):
         df = pd.DataFrame(sw_data)
+        if df.empty:
+            print("No data found for the selected time range.")
+            input("Press any key to continue ..")
+            return
+    
         df["value"] = pd.to_numeric(df["value"], errors="coerce")
         df["unixt"] = pd.to_numeric(df["unixt"], errors="coerce")
         df = df.dropna(subset=["unixt", "value"])
         df = df[df["value"] > 0]
         
-        df["datetime"] = pd.to_datetime(df["unixt"], unit="s")
+        df["datetime_utc"] = pd.to_datetime(df["unixt"], unit="s", utc=True)
+        df["datetime"] = df["datetime_utc"].dt.tz_convert(ZoneInfo("Asia/Tehran"))
         df["hour_float"] = (
             df["datetime"].dt.hour
             + df["datetime"].dt.minute / 60
