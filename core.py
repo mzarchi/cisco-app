@@ -58,7 +58,7 @@ class Core:
             for future in futures:
                 result = future.result()
                 if result and result not in Config.all_switches:
-                    Config.all_switches.append(result)
+                    self.cf.all_switches.append(result)
 
     def manage_content(self, content: str):
         content = content.split("-------------------------")
@@ -201,7 +201,6 @@ class Core:
                 pass
         return open_ports
 
-    
     def switch_statuses(self):
         self.ter_cls()
         while True:
@@ -867,7 +866,7 @@ class Core:
                     self.sw_con[ip]['used'] = date_time
                     return connect
                 else:
-                    self.sw_con.pop(ip)
+                    del self.sw_con[ip]
 
         auth_index = 0
         while True:
@@ -1023,10 +1022,14 @@ class Core:
     @method_logger
     def switch_ips_worker(self) -> None:
         lg("Started!")
+        self.cf.renew_all_switches += 1
+        if self.cf.renew_all_switches > self.cf.renew_all_switches_interval:
+            self.cf.renew_all_switches = 1
+            self.scan_network()
+            
         connect_failed = 0
         ready_data = {}
         sw_statuse = {}
-        switch_ips = []
         switch_ips = self.cf.all_switches.copy()
 
         dt = self.get_datetime()
