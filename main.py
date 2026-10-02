@@ -1,3 +1,8 @@
+import logging
+
+logging.getLogger("paramiko").setLevel(logging.CRITICAL)
+logging.getLogger("netmiko").setLevel(logging.CRITICAL)
+
 from config import Config
 from database import Database
 from core import Core
@@ -16,10 +21,7 @@ ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp vG192-2609")
 
 startup_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-app_state = {
-    "last_worker_run": startup_time,
-    "worker_status": "Waiting"
-}
+app_state = {"last_worker_run": startup_time, "worker_status": "Waiting"}
 
 state_lock = threading.Lock()
 state_changed = threading.Event()
@@ -27,10 +29,7 @@ state_changed = threading.Event()
 
 def get_worker_state():
     with state_lock:
-        return (
-            app_state["last_worker_run"],
-            app_state["worker_status"]
-        )
+        return (app_state["last_worker_run"], app_state["worker_status"])
 
 
 def run_switch_ips_worker():
@@ -48,8 +47,7 @@ def run_switch_ips_worker():
 
     else:
         with state_lock:
-            app_state["last_worker_run"] = datetime.now().strftime(
-                "%Y-%m-%d %H:%M:%S")
+            app_state["last_worker_run"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             app_state["worker_status"] = "Completed"
         state_changed.set()
 
@@ -64,13 +62,7 @@ def get_menu_input():
     def draw():
         clear_console()
         last_worker_run, worker_status = get_worker_state()
-        print(
-            cr.show_menu(
-                last_worker_run=last_worker_run,
-                worker_status=worker_status
-            ),
-            end=""
-        )
+        print(cr.show_menu(last_worker_run=last_worker_run, worker_status=worker_status), end="")
         print(command, end="", flush=True)
 
     draw()
@@ -191,8 +183,3 @@ while True:
         case "e":
             cr.ter_cls()
             break
-
-'''
-pyinstaller --onefile --icon=icon/cisco-app.ico --version-file="version_info.txt" --name=Cisco-App_vG192-2609 main.py
-git rev-list --count HEAD
-'''
