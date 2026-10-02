@@ -27,6 +27,8 @@ class Config:
     ssh_switch_range = ""
     auth_dict = {}
     mk = []
+    renew_all_switches = 1
+    renew_all_switches_interval = 5
     interval_changed_flag = False
 
     banner = """
@@ -47,8 +49,8 @@ class Config:
         pass
 
     def create_db_dir(self):
-        user = getpass.getuser()
-        #user = "Zarchi-PC"
+        #user = getpass.getuser()
+        user = "Zarchi-PC"
         self.user = user
         db_dirs = f"C:/Users/{user}/AppData/Local/ca_data/"
         os.makedirs(db_dirs, exist_ok=True)
