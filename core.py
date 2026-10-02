@@ -201,20 +201,26 @@ class Core:
                 pass
         return open_ports
 
+    
     def switch_statuses(self):
         self.ter_cls()
         while True:
             msg_select_duration = "List of time range:\n"
-            msg_select_duration += "\td. 1 Day before\n"
-            msg_select_duration += "\tw. 1 Week before\n"
-            msg_select_duration += "\tm. 1 Month before (30 days)\n"
-            msg_select_duration += "\ty. 1 Month before (365 days)\n"
+            msg_select_duration += "\td.  1 Day before\n"
+            msg_select_duration += "\tw.  1 Week before\n"
+            msg_select_duration += "\tm.  1 Month before (30 days)\n"
+            msg_select_duration += "\ty.  1 Month before (365 days)\n"
+            msg_select_duration += "\tat. All Switch/Time in all Temp\n"
+            msg_select_duration += "\tar. All Switch/Time in all Ram\n"
+            msg_select_duration += "\tac. All Switch/Time in all CPU\n"
             msg_select_duration += "\tb. back\n"
             msg_select_duration += "Enter your choose: "
-            time_duration = input(msg_select_duration)
+            user_case = input(msg_select_duration)
             
             start_search = 0
-            match time_duration:
+            pname = None
+            one_switch = True
+            match user_case:
                 case "d":
                     start_search = int(self.get_datetime()['unix']) - 86400
                     
@@ -227,16 +233,22 @@ class Core:
                 case "y":
                     start_search = int(self.get_datetime()['unix']) - 31536000
                     
+                case "at" | "ar" | "ac":
+                    one_switch = False
+                    pname = {'at':'temp','ar':'ram','ac':'cpu'}[user_case]
+                    
                 case "b":
                     break
             
             self.ter_cls()
             while True:
-                sw_ip = input("Enter your Switch IP (b: back): ")
-                if sw_ip == "b":
-                    break
+                sw_ip = 0
+                if one_switch:
+                    sw_ip = input("Enter your Switch IP (b: back): ")
+                    if sw_ip == "b":
+                        break
                 
-                sw_data = self.db.get_switch_statuses(start_search, sw_ip)
+                sw_data = self.db.get_switch_statuses(start_search, sw_ip , pname)
                 if not sw_data:
                     input("No Data found, press any key to continue ..")
                     continue
@@ -1557,6 +1569,24 @@ class Core:
                                     else:
                                         print(f"{ip:15} - {key} already set!")
                         connect.save_config()
+                
+                case ("set", "switch", "-", "all"):
+                    target_ips = self.cf.all_switches
+                    if funcs[4] == "all":
+                        for i, ip in enumerate(target_ips):
+                            try:
+                                connect = self.__cnt(ip)
+                                if connect is None:
+                                    continue
+
+                                print(f"{i:<3} - {ip:<15} is opened: ", end="")
+                                configs_lines = lines[2:]
+                                connect.send_config_set(configs_lines)
+                                connect.save_config()
+                                print(f"set config and saved!")
+                            except Exception as e:
+                                lg(type(e).__name__)
+                        input("press any key to continue ..")
 
     def coreConfigFormatChanger(self, config):
         output = []
@@ -1677,6 +1707,7 @@ class Core:
 
     @method_logger
     def coreSearchSwitchesIPsDatabase(self):
+        self.ter_cls()
         dt = self.get_datetime()
         while True:
             result = "\n"
