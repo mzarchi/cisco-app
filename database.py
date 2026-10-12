@@ -109,13 +109,18 @@ class Database:
                                 """)
             
             self.cursor.execute("""
-                                CREATE TABLE IF NOT EXISTS sw_trafics (
+                                CREATE TABLE IF NOT EXISTS sw_traffics (
                                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                    ut TEXT NOT NULL,
+                                    ts TEXT NOT NULL,
+                                    td TEXT NOT NULL,
                                     sw TEXT NOT NULL,
                                     port TEXT NOT NULL,
-                                    input TEXT NOT NULL,
-                                    outpuy TEXT NOT NULL)
+                                    vl INTEGER NOT NULL,
+                                    ip TEXT NOT NULL,
+                                    mac TEXT NOT NULL,
+                                    type TEXT NOT NULL,
+                                    send REAL NOT NULL,
+                                    receive REAL NOT NULL)
                                 """)
             self.__close()
             
@@ -131,6 +136,37 @@ class Database:
         row = self.cursor.fetchone()
         if not row:
             self.cursor.execute("""INSERT INTO app_variables (interval_switch_ip) VALUES (?)""", ("240",))
+        self.__close()
+        
+    def insert_sw_traffics(self, switch, data:dict):
+        if not self.db_open:
+            self.__open()
+            
+        for key in data.keys():
+            self.cursor.execute(
+                    """INSERT INTO sw_traffics (
+                            ts,
+                            td,
+                            sw,
+                            port,
+                            vl,
+                            ip,
+                            mac,
+                            type,
+                            send,
+                            receive
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (
+                        data[key]['unix'],
+                        data[key]['datetime'],
+                        switch,
+                        key,
+                        int(data[key]['vlan']),
+                        data[key]['ip'],
+                        data[key]['mac'],
+                        data[key]['type'],
+                        float(data[key]['send']),
+                        float(data[key]['receive'])
+                    ))
         self.__close()
             
     def get_app_variables(self):
