@@ -854,6 +854,9 @@ class Core:
         else:
             return 0, 0, 0
 
+    def cnt(self, ip):
+        return self.__cnt(ip)
+    
     def __cnt(self, ip):
         connect = None
         dt = self.get_datetime()
@@ -931,10 +934,8 @@ class Core:
         ready_data = {}
         switch_ips = []
         user_special_ip = input("Enter Special Switch IP or Enter: ")
-        did_scan = False
         if user_special_ip == "":
             self.scan_network()
-            did_scan = True
             switch_ips = self.cf.all_switches
         else:
             switch_ips.append(user_special_ip)
