@@ -8,6 +8,7 @@ dist/
 pilot*
 local*
 *.spec
+*.json
 temp.txt
 mplcursors/
 commands.txt
