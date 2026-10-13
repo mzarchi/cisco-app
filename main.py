@@ -137,49 +137,53 @@ interval_watcher_thread.start()
 
 
 while True:
-    switch = get_menu_input()
-    switch = switch.lower()
+    try:
+        switch = get_menu_input()
+        switch = switch.lower()
 
-    match switch:
-        case "0":
-            cr.app_settings_handler()
+        match switch:
+            case "0":
+                cr.app_settings_handler()
 
-        case "1":
-            cr.case_ip_scanner()
+            case "1":
+                cr.case_ip_scanner()
 
-        case "2":
-            cr.case_switch_scan()
+            case "2":
+                cr.case_switch_scan()
 
-        case "3":
-            cr.switch_statuses()
+            case "3":
+                cr.switch_statuses()
 
-        case "4":
-            cr.case_switch_link()
+            case "4":
+                cr.case_switch_link()
 
-        case "5":
-            cr.case_switch_ips()
+            case "5":
+                cr.case_switch_ips()
 
-        case "6":
-            cr.case_switch_ips(dns_mode=True)
+            case "6":
+                cr.case_switch_ips(dns_mode=True)
 
-        case "7":
-            cr.case_config_manager()
+            case "7":
+                cr.case_config_manager()
 
-        case "8":
-            cr.case_access_list_manager()
+            case "8":
+                cr.case_access_list_manager()
 
-        case "9":
-            cr.coreGetSwitchesBackup()
+            case "9":
+                cr.coreGetSwitchesBackup()
 
-        case "s":
-            cr.coreSearchSwitchesIPsDatabase()
+            case "s":
+                cr.coreSearchSwitchesIPsDatabase()
 
-        case "c":
-            cr.coreCreateExportCsvFile()
+            case "c":
+                cr.coreCreateExportCsvFile()
 
-        case "r":
-            cr.coreRunSqlQuery()
+            case "r":
+                cr.coreRunSqlQuery()
 
-        case "e":
-            cr.ter_cls()
-            break
+            case "e":
+                cr.ter_cls()
+                break
+    except KeyboardInterrupt as ki:
+        cr.ter_cls()
+        cr.show_menu()

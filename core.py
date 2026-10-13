@@ -465,11 +465,7 @@ class Core:
                 else:
                     print(f"[-] {ip:<15} down")
             
-            except KeyboardInterrupt as ki:
-                lg(type(ki).__name__)
-                self.ter_cls()
-                self.show_menu()
-                return
+            
             
             except KeyboardInterrupt as e:
                 message += "\nTask Killed!\n"
@@ -536,12 +532,6 @@ class Core:
 
                     result += wr_result
                 
-                except KeyboardInterrupt as ki:
-                    lg(type(ki).__name__)
-                    self.ter_cls()
-                    self.show_menu()
-                    return
-            
                 except Exception as e:
                     lg(type(e).__name__)
                     continue
@@ -830,12 +820,6 @@ class Core:
 
                 super_putty.append(f'<SessionData SessionId="{self.cf.hostname}" SessionName="{self.cf.hostname}" ImageKey="computer" Host="{ip}" Port="22" Proto="SSH" PuttySession="Default Settings" Username="" ExtraArgs="" SPSLFileName="" RemotePath="" LocalPath="" />')
             
-            except KeyboardInterrupt as ki:
-                lg(type(ki).__name__)
-                self.ter_cls()
-                self.show_menu()
-                return
-            
             except Exception as e:
                 lg(type(e).__name__)
                 continue
@@ -1022,11 +1006,7 @@ class Core:
                                 print(line)
                                 counter += 1
             
-            except KeyboardInterrupt as ki:
-                lg(type(ki).__name__)
-                self.ter_cls()
-                self.show_menu()
-                return
+            
             
             except Exception as e:
                 lg(type(e).__name__)
@@ -1045,7 +1025,7 @@ class Core:
         input("Press any key to exit ..")
 
     @method_logger
-    def switch_ips_worker(self) -> None:
+    def switch_ips_worker(self) -> None: # mhz edit this for get trffics :)
         lg("Started!")
         self.cf.renew_all_switches += 1
         if self.cf.renew_all_switches > self.cf.renew_all_switches_interval:
@@ -1726,12 +1706,6 @@ class Core:
                     self.coreWriteFile(f"{self.cf.backup_dir}{hostname}-backup_{dt['date']}-{dt['time']}.txt", backup_msg)
                     print("backup file successfully!")
                     counter += 1
-                
-                except KeyboardInterrupt as ki:
-                    lg(type(ki).__name__)
-                    self.ter_cls()
-                    self.show_menu()
-                    return
             
                 except Exception as e:
                     lg(type(e).__name__)
