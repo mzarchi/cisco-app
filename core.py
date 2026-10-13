@@ -464,6 +464,13 @@ class Core:
                     result_text += f"{message}\n"
                 else:
                     print(f"[-] {ip:<15} down")
+            
+            except KeyboardInterrupt as ki:
+                lg(type(ki).__name__)
+                self.ter_cls()
+                self.show_menu()
+                return
+            
             except KeyboardInterrupt as e:
                 message += "\nTask Killed!\n"
                 lg(type(e).__name__)
@@ -528,6 +535,13 @@ class Core:
                                 wr_result += f"{part_one} ----> {part_two} {part_three}\n"
 
                     result += wr_result
+                
+                except KeyboardInterrupt as ki:
+                    lg(type(ki).__name__)
+                    self.ter_cls()
+                    self.show_menu()
+                    return
+            
                 except Exception as e:
                     lg(type(e).__name__)
                     continue
@@ -815,6 +829,13 @@ class Core:
                     show_result_console.update({model:[uptime_line_console]})
 
                 super_putty.append(f'<SessionData SessionId="{self.cf.hostname}" SessionName="{self.cf.hostname}" ImageKey="computer" Host="{ip}" Port="22" Proto="SSH" PuttySession="Default Settings" Username="" ExtraArgs="" SPSLFileName="" RemotePath="" LocalPath="" />')
+            
+            except KeyboardInterrupt as ki:
+                lg(type(ki).__name__)
+                self.ter_cls()
+                self.show_menu()
+                return
+            
             except Exception as e:
                 lg(type(e).__name__)
                 continue
@@ -1000,9 +1021,12 @@ class Core:
                                 ip_text_file += f"{line}\n"
                                 print(line)
                                 counter += 1
+            
             except KeyboardInterrupt as ki:
                 lg(type(ki).__name__)
-                break
+                self.ter_cls()
+                self.show_menu()
+                return
             
             except Exception as e:
                 lg(type(e).__name__)
@@ -1702,6 +1726,13 @@ class Core:
                     self.coreWriteFile(f"{self.cf.backup_dir}{hostname}-backup_{dt['date']}-{dt['time']}.txt", backup_msg)
                     print("backup file successfully!")
                     counter += 1
+                
+                except KeyboardInterrupt as ki:
+                    lg(type(ki).__name__)
+                    self.ter_cls()
+                    self.show_menu()
+                    return
+            
                 except Exception as e:
                     lg(type(e).__name__)
                     pass
