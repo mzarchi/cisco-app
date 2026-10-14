@@ -1,0 +1,42 @@
+name: Python CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  syntax-check:
+    name: Python Syntax Check
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check Python syntax
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Recurse -Filter *.py |
+            Where-Object { $_.FullName -notmatch '[\\/]\.git[\\/]' }
+
+          if (-not $files) {
+            Write-Error "No Python files found."
+            exit 1
+          }
+
+          foreach ($file in $files) {
+            Write-Host "Checking $($file.FullName)"
+            python -m py_compile $file.FullName
+
+            if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+            }
+          }
