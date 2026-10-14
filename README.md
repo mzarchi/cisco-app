@@ -175,9 +175,3 @@ Cisco App is an independent project and is not affiliated with, endorsed by, or 
 
 Test changes in a controlled environment before applying them to production infrastructure.
 
-## Author
-
-**[@mzarchi](https://github.com/mzarchi)**
-
-**Repository:** [github.com/mzarchi/cisco-app](https://github.com/mzarchi/cisco-app)
-
