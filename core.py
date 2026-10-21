@@ -1,10 +1,8 @@
 from config import Config
-from zoneinfo import ZoneInfo
 from datetime import datetime
 from database import Database
 from encrypt import Encryption
 from decorators import method_logger, lg
-from matplotlib.ticker import MultipleLocator
 from concurrent.futures import ThreadPoolExecutor
 from netmiko.base_connection import BaseConnection
 from netmiko import ConnectHandler, NetmikoTimeoutException, NetMikoAuthenticationException, ReadTimeout
@@ -20,8 +18,11 @@ import platform
 import ipaddress
 import subprocess
 import threading
-import pandas as pd
-import matplotlib.pyplot as plt
+
+#import pandas as pd
+#import matplotlib.pyplot as plt
+#from zoneinfo import ZoneInfo
+#from matplotlib.ticker import MultipleLocator
 
 
 class Core:
@@ -202,6 +203,7 @@ class Core:
                 pass
         return open_ports
 
+    """ Remove from algoritm, don't delete codes
     def switch_statuses(self):
         self.ter_cls()
         while True:
@@ -384,6 +386,8 @@ class Core:
         
         plt.show()
     
+    """
+        
     def __get_switch_temp(self, ip) -> int:
         int_value = 0
         try:
@@ -860,9 +864,6 @@ class Core:
         else:
             return 0, 0, 0
 
-    def cnt(self, ip):
-        return self.__cnt(ip)
-    
     def __cnt(self, ip):
         connect = None
         dt = self.get_datetime()
@@ -1037,7 +1038,6 @@ class Core:
         rest = rest.strip('/')
         return f"{prefix}{rest}"
 
-
     def convertBitToKilobyte(self, number):
         if number is None:
             return 0.0
@@ -1157,7 +1157,6 @@ class Core:
 
             result[port] = {'RXBS': rxbs, 'TXBS': txbs,}
         return result
-
 
     def parse_ip_device_tracking(self, output: str) -> dict:
         if not output:
