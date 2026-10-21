@@ -120,7 +120,15 @@ class Database:
                                     mac TEXT NOT NULL,
                                     type TEXT NOT NULL,
                                     send REAL NOT NULL,
-                                    receive REAL NOT NULL)
+                                    receive REAL NOT NULL,
+                                    status TEXT,
+                                    speed TEXT,
+                                    ip_count INTEGER,
+                                    state TEXT,
+                                    source TEXT,
+                                    rxb_raw INTEGER,
+                                    txb_raw INTEGER,
+                                    vlan_str TEXT)
                                 """)
             self.__close()
             
@@ -138,35 +146,37 @@ class Database:
             self.cursor.execute("""INSERT INTO app_variables (interval_switch_ip) VALUES (?)""", ("240",))
         self.__close()
         
-    def insert_sw_traffics(self, switch, data:dict):
+    def insert_sw_traffics(self, switch, data: dict):
         if not self.db_open:
             self.__open()
-            
+
         for key in data.keys():
             self.cursor.execute(
-                    """INSERT INTO sw_traffics (
-                            ts,
-                            td,
-                            sw,
-                            port,
-                            vl,
-                            ip,
-                            mac,
-                            type,
-                            send,
-                            receive
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (
-                        data[key]['unix'],
-                        data[key]['datetime'],
-                        switch,
-                        key,
-                        int(data[key]['vlan']),
-                        data[key]['ip'],
-                        data[key]['mac'],
-                        data[key]['type'],
-                        float(data[key]['send']),
-                        float(data[key]['receive'])
-                    ))
+                """INSERT INTO sw_traffics (
+                        ts, td, sw, port, vl, ip, mac, type, send, receive,
+                        status, speed, ip_count, state, source, rxb_raw, txb_raw, vlan_str
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    data[key]['unix'],
+                    data[key]['datetime'],
+                    switch,
+                    key,
+                    int(data[key]['vlan']),
+                    data[key]['ip'],
+                    data[key]['mac'],
+                    data[key]['type'],
+                    float(data[key]['send']),
+                    float(data[key]['receive']),
+                    data[key].get('status'),          
+                    data[key].get('speed'),
+                    data[key].get('ip_count'),
+                    data[key].get('state'),
+                    data[key].get('source'),
+                    data[key].get('rxb_raw'),
+                    data[key].get('txb_raw'),
+                    data[key].get('vlan_str'),
+                )
+            )
         self.__close()
             
     def get_app_variables(self):

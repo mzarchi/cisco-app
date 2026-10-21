@@ -13,6 +13,7 @@ import os
 import re
 import csv
 import time
+import json
 import socket
 import getpass
 import platform
@@ -1024,73 +1025,321 @@ class Core:
                     
         input("Press any key to exit ..")
 
+    def normalize_port(self, port_name: str) -> str:
+        if not port_name:
+            return ""
+
+        port_name = port_name.strip()
+        m = re.match(r'^([A-Za-z])', port_name)
+        prefix = m.group(1).upper() if m else ""
+        rest = re.sub(r'[A-Za-z]', '', port_name)
+        rest = re.sub(r'[^0-9/]', '', rest)
+        rest = rest.strip('/')
+        return f"{prefix}{rest}"
+
+
+    def convertBitToKilobyte(self, number):
+        if number is None:
+            return 0.0
+        try:
+            return round((number / 8) / 1024, 1)
+        except (TypeError, ValueError):
+            return 0.0
+
+
+    def parse_interfaces_status(self, output: str) -> dict:
+        if not output:
+            return {}
+
+        statuses = (
+            r'connected|notconnect|disabled|err-disabled|inactive|'
+            r'routed|monitoring|suspended|unassigned|sfpAbsent|standby|'
+            r'errdisabled|linkdown|up|down'
+        )
+
+        pattern = re.compile(
+            r'^\s*'
+            r'(\S+)\s+'
+            r'.*?'
+            r'\b(' + statuses + r')\s+'
+            r'(\S+)\s+'
+            r'(\S+)\s+'
+            r'(\S+)\s+'
+            r'(\S+)\s*$',
+            re.MULTILINE | re.IGNORECASE
+        )
+
+        result = {}
+
+        for m in pattern.finditer(output):
+            port_raw = m.group(1)
+            if port_raw.lower() in ('port', 'interface'):
+                continue
+            port = self.normalize_port(port_raw)
+            if not port:
+                continue
+
+            status = m.group(2).lower()
+            vlan_raw = m.group(3)
+            speed = m.group(5)
+
+            vlan_int = 0
+            vlan_str = "0"
+            port_type = "Unknown"
+            vlan_lower = vlan_raw.lower()
+
+            if vlan_lower == "trunk":
+                port_type = "Trunk"
+                vlan_str = "trunk"
+            elif vlan_lower == "routed":
+                port_type = "Routed"
+                vlan_str = "routed"
+            elif vlan_lower == "unassigned":
+                port_type = "NotConnect"
+                vlan_str = "unassigned"
+            else:
+                try:
+                    vlan_int = int(vlan_raw)
+                    vlan_str = str(vlan_int)
+                    port_type = "Access"
+                except ValueError:
+                    port_type = "Unknown"
+
+            result[port] = {
+                'status': status,
+                'vlan_int': vlan_int,
+                'vlan_str': vlan_str,
+                'speed': speed,
+                'type': port_type,
+            }
+
+        return result
+
+
+    def parse_interfaces_summary(self, output: str) -> dict:
+        if not output:
+            return {}
+
+        pattern = re.compile(
+            r'^\s*\*?\s*'
+            r'(\S+)\s+'
+            r'(\d+)\s+'
+            r'(\d+)\s+'
+            r'(\d+)\s+'
+            r'(\d+)\s+'
+            r'(\d+)\s+'
+            r'(\d+)\s+'
+            r'(\d+)\s+'
+            r'(\d+)\s+'
+            r'(\d+)\s*$',
+            re.MULTILINE
+        )
+
+        result = {}
+
+        for m in pattern.finditer(output):
+            port_raw = m.group(1)
+
+            if (port_raw.lower() == 'interface'
+                or port_raw.lower().startswith('vlan')
+                or port_raw.lower().startswith('fastethernet0')):
+                continue
+
+            port = self.normalize_port(port_raw)
+            if not port:
+                continue
+
+            try:
+                rxbs = int(m.group(6))
+                txbs = int(m.group(8))
+            except ValueError:
+                continue
+
+            result[port] = {'RXBS': rxbs, 'TXBS': txbs,}
+        return result
+
+
+    def parse_ip_device_tracking(self, output: str) -> dict:
+        if not output:
+            return {}
+
+        pattern = re.compile(
+            r'^\s*'
+            r'(\d{1,3}(?:\.\d{1,3}){3})\s+'
+            r'([0-9a-f]{4}\.[0-9a-f]{4}\.[0-9a-f]{4})\s+'
+            r'(\d+)\s+'
+            r'(\S+)\s+'
+            r'(\d+)\s+'
+            r'(\S+)\s+'
+            r'(\S+)\s*$',
+            re.MULTILINE | re.IGNORECASE
+        )
+
+        result = {}
+        for m in pattern.finditer(output):
+            ip = m.group(1)
+            mac = m.group(2)
+            vlan = int(m.group(3))
+            port_raw = m.group(4)
+            state = m.group(6)
+            source = m.group(7)
+
+            port = self.normalize_port(port_raw)
+            if not port:
+                continue
+
+            entry = {
+                'IP': ip,
+                'MAC': mac,
+                'VLAN': vlan,
+                'State': state,
+                'Source': source,
+            }
+
+            if port not in result:
+                result[port] = []
+            result[port].append(entry)
+        return result
+
     @method_logger
-    def switch_ips_worker(self) -> None: # mhz edit this for get trffics :)
+    def switch_ips_worker(self) -> None:
         lg("Started!")
+
         self.cf.renew_all_switches += 1
-        if self.cf.renew_all_switches > self.cf.renew_all_switches_interval:
+        if (self.cf.renew_all_switches > self.cf.renew_all_switches_interval):
             self.cf.renew_all_switches = 1
             self.scan_network()
-            
+
         connect_failed = 0
         ready_data = {}
         sw_statuse = {}
         switch_ips = self.cf.all_switches.copy()
 
         dt = self.get_datetime()
-        date_time = f"{dt['unix']}"
+        date_time = str(dt['unix'])
+        traffic_datetime = dt.get('psc', dt['dati'])
+        active_states = {"ACTIVE", "Active", "active", "REACHABLE", "Reachable", "reachable"}
+        tracking_pattern = re.compile(
+            r"(\d+\.\d+\.\d+\.\d+)"
+            r".*?"
+            r"([0-9A-Fa-f]{4}(?:\.[0-9A-Fa-f]{4}){2})"
+            r".*?"
+            r"(\S*\/\S*)"
+        )
 
         for hip in switch_ips:
-            sw_statuse_helper = {}
+            connect = None
             try:
                 connect = self.__cnt(hip)
                 if connect is None:
                     connect_failed += 1
                     if connect_failed == 3:
                         break
-                    else:
-                        continue
+                    continue
 
                 connect_failed = 0
-                temp = self.__get_switch_temp(hip)
-                cpu = self.__get_switch_cpu(hip)
-                ram = self.__get_switch_ram(hip)
-                sw_statuse_helper.update({"tmp":temp})
-                sw_statuse_helper.update({"cpu":cpu})
-                sw_statuse_helper.update({"ram":ram})
-                sw_statuse.update({hip:sw_statuse_helper})
-                
+                sw_statuse[hip] = {
+                    "tmp": self.__get_switch_temp(hip),
+                    "cpu": self.__get_switch_cpu(hip),
+                    "ram": self.__get_switch_ram(hip),
+                }
+
                 sidta = connect.send_command("show ip device tracking all")
-                if "%" in sidta:
+                if not sidta or "%" in sidta:
                     sidta = connect.send_command("show device-tracking database")
-                
 
-                pattern = re.compile(
-                    r"(\d+\.\d+\.\d+\.\d+)"
-                    r".*?"
-                    r"([0-9A-Fa-f]{4}(?:\.[0-9A-Fa-f]{4}){2})"
-                    r".*?"
-                    r"(\S*\/\S*)"
-                )
-
-                actives = ["ACTIVE", "Active", "active", "REACHABLE", "Reachable", "reachable"]
                 for line in sidta.splitlines():
-                    if any(state in line.split() for state in actives):
-                        match = pattern.search(line)
-                        if match:
-                            ip, mac, port = match.groups()
-                            imsp = f"{ip}|{mac}|{hip}|{port}"
-                            ready_data.update({ip: imsp})
+                    if not any(state in line.split() for state in active_states):
+                        continue
+                    match = tracking_pattern.search(line)
+                    if match:
+                        ip, mac, port = match.groups()
+                        imsp = f"{ip}|{mac}|{hip}|{port}"
+                        ready_data[ip] = imsp
+
+                sistatus = connect.send_command("show interfaces status")
+                status_dict = self.parse_interfaces_status(sistatus)
+                sisummary = connect.send_command("show interfaces summary")
+                summary_dict = self.parse_interfaces_summary(sisummary)
+                tracking_dict = self.parse_ip_device_tracking(sidta)
+                all_ports = (set(status_dict) | set(summary_dict) | set(tracking_dict))
+                result = {}
+                for port in all_ports:
+                    entry = {
+                        'unix': dt['unix'],
+                        'datetime': traffic_datetime,
+                        'vlan': 0,
+                        'ip': "-",
+                        'mac': "-",
+                        'type': "Unknown",
+                        'send': 0.0,
+                        'receive': 0.0,
+                        'status': None,
+                        'speed': None,
+                        'ip_count': None,
+                        'state': None,
+                        'source': None,
+                        'rxb_raw': None,
+                        'txb_raw': None,
+                        'vlan_str': None,
+                    }
+
+                    if port in status_dict:
+                        status = status_dict[port]
+                        entry['vlan'] = status['vlan_int']
+                        entry['type'] = status['type']
+                        entry['status'] = status['status']
+                        entry['speed'] = status['speed']
+                        entry['vlan_str'] = status['vlan_str']
+
+                    if port in summary_dict:
+                        traffic = summary_dict[port]
+                        rxb = traffic['RXBS']
+                        txb = traffic['TXBS']
+                        entry['rxb_raw'] = rxb
+                        entry['txb_raw'] = txb
+                        entry['receive'] = self.convertBitToKilobyte(rxb)
+                        entry['send'] = self.convertBitToKilobyte(txb)
+
+                    if port in tracking_dict:
+                        entries = tracking_dict[port]
+                        ips_list = [item['IP'] for item in entries]
+                        macs_list = [item['MAC'] for item in entries]
+                        states_list = [item['State'] for item in entries]
+                        sources_list = [item['Source'] for item in entries]
+
+                        if len(entries) == 1:
+                            entry['ip'] = ips_list[0]
+                            entry['mac'] = macs_list[0]
+                        else:
+                            entry['ip'] = json.dumps(ips_list, ensure_ascii=False)
+                            entry['mac'] = json.dumps(macs_list, ensure_ascii=False)
+
+                        entry['ip_count'] = len(entries)
+                        entry['state'] = ",".join(set(states_list))
+                        entry['source'] = ",".join(set(sources_list))
+
+                        if entry['type'] == "Unknown":
+                            entry['type'] = "Access"
+                            if entry['vlan'] == 0:
+                                entry['vlan'] = int(entries[0]['VLAN'])
+
+                    result[port] = entry
+
+                if result:
+                    try:
+                        self.db.insert_sw_traffics(hip, result)
+                        #lg(f"ip: {hip}, ports: {len(result)}" )
+                    except Exception as db_err:
+                        lg(f"{type(db_err).__name__} - {db_err}")
+                else:
+                    lg(f"[{hip}] SKIPPED: empty traffic result.")
             except Exception as e:
-                lg(f"IP: {hip}, {type(e).__name__}")
+                lg(f"IP: {hip}, {type(e).__name__}: {e}")
                 if hip == switch_ips[-1]:
                     break
-                else:
-                    continue
-                
+
         self.db.insert_ipdata(ready_data, sw_statuse, date_time, dt['dati'])
-        if connect_failed < 3:
-            pass
 
     @method_logger
     def case_access_list_manager(self) -> None:
