@@ -151,9 +151,7 @@ while True:
             case "2":
                 cr.case_switch_scan()
 
-            case "3":
-                print("This future was deactivate.")
-                input("Please insert any key to continue ..")
+            #case "3":
                 #cr.switch_statuses()
 
             case "4":

@@ -171,7 +171,7 @@ class Core:
             0- App Settings (Edit all app settings)
             1- IP Scanner + Subnet (Get all ip by subnet)
             2- Switch Scan (Get list of your switches)
-            3- Switch Statuses
+            3- Switch Statuses (Inactive)
             4- Switches Link (Get uplink of your switches)
             5- Switches IPs (Get list of your IP Address in your switch)
             6- Get DNS name by IP
