@@ -17,10 +17,10 @@ VSVersionInfo(
         [StringStruct(u'CompanyName', u'Mohammad Zarchi'),
         StringStruct(u'FileDescription', u'Cisco Asistant Tool'),
         StringStruct(u'FileVersion', u'192, 26, 9, 18'),
-        StringStruct(u'InternalName', u'Cisco-App_vG192-2609'),
+        StringStruct(u'InternalName', u'Cisco-App_vG211-2610'),
         StringStruct(u'LegalCopyright', u'Copyright (c) 2026. Released under MIT License.'),
-        StringStruct(u'OriginalFilename', u'Cisco-App_vG192-2609.exe'),
-        StringStruct(u'ProductName', u'Cisco-App_vG192-2609'),
+        StringStruct(u'OriginalFilename', u'Cisco-App_vG211-2610.exe'),
+        StringStruct(u'ProductName', u'Cisco-App_vG211-2610'),
         StringStruct(u'ProductVersion', u'192, 26, 9, 18')])
       ]
     ),

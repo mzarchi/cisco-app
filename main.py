@@ -16,7 +16,7 @@ import threading
 import time
 
 
-ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp vG192-2609")
+ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp vG211-2610")
 
 
 startup_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
