@@ -3,7 +3,10 @@ __*
 *.db
 *test*
 .venv
+*.csv
 build/
+.ipynb_checkpoints/
+.jupyter/
 dist/
 pilot*
 local*
