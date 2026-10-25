@@ -1,22 +1,20 @@
+import time
+import threading
+import os
+import msvcrt
+import ctypes
+from datetime import datetime
+from PeriodicWorker import PeriodicWorker
+from core import Core
+from database import Database
+from config import Config
 import logging
 
 logging.getLogger("paramiko").setLevel(logging.CRITICAL)
 logging.getLogger("netmiko").setLevel(logging.CRITICAL)
 
-from config import Config
-from database import Database
-from core import Core
-from PeriodicWorker import PeriodicWorker
-from datetime import datetime
 
-import ctypes
-import msvcrt
-import os
-import threading
-import time
-
-
-ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp vG211-2610")
+ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp vG214-2610")
 
 
 startup_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -47,7 +45,8 @@ def run_switch_ips_worker():
 
     else:
         with state_lock:
-            app_state["last_worker_run"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            app_state["last_worker_run"] = datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S")
             app_state["worker_status"] = "Completed"
         state_changed.set()
 
@@ -62,7 +61,8 @@ def get_menu_input():
     def draw():
         clear_console()
         last_worker_run, worker_status = get_worker_state()
-        print(cr.show_menu(last_worker_run=last_worker_run, worker_status=worker_status), end="")
+        print(cr.show_menu(last_worker_run=last_worker_run,
+              worker_status=worker_status), end="")
         print(command, end="", flush=True)
 
     draw()
@@ -153,8 +153,8 @@ while True:
             case "2":
                 cr.case_switch_scan()
 
-            #case "3":
-                #cr.switch_statuses()
+            # case "3":
+                # cr.switch_statuses()
 
             case "4":
                 cr.case_switch_link()

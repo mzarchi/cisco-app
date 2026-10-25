@@ -19,10 +19,10 @@ import ipaddress
 import subprocess
 import threading
 
-#import pandas as pd
-#import matplotlib.pyplot as plt
-#from zoneinfo import ZoneInfo
-#from matplotlib.ticker import MultipleLocator
+# import pandas as pd
+# import matplotlib.pyplot as plt
+# from zoneinfo import ZoneInfo
+# from matplotlib.ticker import MultipleLocator
 
 
 class Core:
@@ -35,28 +35,27 @@ class Core:
         pass
 
     def ping(self, ip):
-            param = "-n" if platform.system().lower() == "windows" else "-c"
-            command = ["ping", param, "1", ip]
-            try:
-                result = subprocess.run(
-                    command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1)
-                if result.returncode == 0:
-                    return ip
-            except subprocess.TimeoutExpired as e:
-                # lg(f"{ip}:{type(e).__name__}") Igored
-                return None
-            except Exception as e:
-                lg(f"{ip}:{type(e).__name__}")
-                return None
-            
+        param = "-n" if platform.system().lower() == "windows" else "-c"
+        command = ["ping", param, "1", ip]
+        try:
+            result = subprocess.run(
+                command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1)
+            if result.returncode == 0:
+                return ip
+        except subprocess.TimeoutExpired as e:
+            # lg(f"{ip}:{type(e).__name__}") Igored
+            return None
+        except Exception as e:
+            lg(f"{ip}:{type(e).__name__}")
+            return None
+
     def scan_network(self):
         ip_subnet = Config.ssh_switch_range
         network = ipaddress.ip_network(ip_subnet, strict=False)
 
-        
-
         with ThreadPoolExecutor(max_workers=50) as executor:
-            futures = [executor.submit(self.ping, str(host)) for host in network.hosts()]
+            futures = [executor.submit(self.ping, str(host))
+                       for host in network.hosts()]
             for future in futures:
                 result = future.result()
                 if result and result not in Config.all_switches:
@@ -158,7 +157,8 @@ class Core:
     def show_banner(self):
         print(Config.banner)
         message = f"Developer: github/mzarchi, Open-Source project\n"
-        message += "First-Commit: G0-2508, version: G211-2610\n" # G{CommitsCounts}-{YYMM}
+        # G{CommitsCounts}-{YYMM}
+        message += "First-Commit: G0-2508, version: G214-2610\n"
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
         message += "I always live in the depths of the Internet ❤️"
@@ -186,7 +186,8 @@ class Core:
 
     def ping_host(self, ip):
         cmd = ["ping", "-n", "1", "-w", "300", ip]
-        result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        result = subprocess.run(
+            cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return result.returncode == 0
 
     def check_ports(self, ip):
@@ -387,7 +388,7 @@ class Core:
         plt.show()
     
     """
-        
+
     def __get_switch_temp(self, ip) -> int:
         int_value = 0
         try:
@@ -395,12 +396,14 @@ class Core:
             showenvall = cnt.send_command("show env all")
             if "FAULTY" in showenvall:
                 lg(f"ip: {ip}, Switch should be check!")
-                
-            match_legacy = re.search(r"System Temperature Value:\s*(\d+)\s*Degree Celsius", showenvall)
+
+            match_legacy = re.search(
+                r"System Temperature Value:\s*(\d+)\s*Degree Celsius", showenvall)
             if match_legacy:
                 return int(match_legacy.group(1))
 
-            match_xe = re.search(r"SYSTEM HOTSPOT\s+\d+\s+\w+\s+(\d+)\s+Celsius", showenvall)
+            match_xe = re.search(
+                r"SYSTEM HOTSPOT\s+\d+\s+\w+\s+(\d+)\s+Celsius", showenvall)
             if match_xe:
                 return int(match_xe.group(1))
 
@@ -423,28 +426,28 @@ class Core:
                 total = int(memory.group(1))
                 used = int(memory.group(2))
                 ram_percent = int((used * 100) / total)
-                
+
             return ram_percent
         except Exception as e:
             lg(f"IP: {ip}, {type(e).__name__}")
             return 0
-        
+
     def __get_switch_cpu(self, ip) -> int:
         try:
             cnt = self.__cnt(ip)
-            showprocesscpu = cnt.send_command("show processes cpu | include CPU")
+            showprocesscpu = cnt.send_command(
+                "show processes cpu | include CPU")
             cpu = re.search(r"five minutes:\s*(\d+%)", showprocesscpu)
             five_minutes_cpu = 0
             if cpu:
                 five_minutes_cpu = int(cpu.group(1).replace("%", ""))
-            
+
             return five_minutes_cpu
-        
+
         except Exception as e:
             lg(f"IP: {ip}, {type(e).__name__}")
             return 0
-        
-        
+
     @method_logger
     def case_ip_scanner(self):
         base_ip_subnet = input("Insert your ip: ")
@@ -469,9 +472,7 @@ class Core:
                     result_text += f"{message}\n"
                 else:
                     print(f"[-] {ip:<15} down")
-            
-            
-            
+
             except KeyboardInterrupt as e:
                 message += "\nTask Killed!\n"
                 lg(type(e).__name__)
@@ -514,16 +515,16 @@ class Core:
                         link1 = f"{Config.hostname}-{sw_data["ports"][0]}|{sw_data["device"]}-{sw_data["ports"][1]}"
                         link2 = f"{sw_data["device"]}-{sw_data["ports"][1]}|{Config.hostname}-{sw_data["ports"][0]}"
                         msl_dt = f"{dt['date']}-{dt['time']}"
-                        
+
                         if al == "1":
                             update = db.manage_switch_link(link1, msl_dt)
                             part_three = "Insert (New!)"
                             if update:
                                 part_three = "Update"
-    
+
                             print(f"{part_one} ----> {part_two} {part_three}")
                             wr_result += f"{part_one} ----> {part_two} {part_three}\n"
-                            
+
                         elif al == "2":
                             if link1 not in switch_al and link2 not in switch_al:
                                 update = db.manage_switch_link(link1, msl_dt)
@@ -531,12 +532,13 @@ class Core:
                                 part_three = "Insert (New!)"
                                 if update:
                                     part_three = "Update"
-    
-                                print(f"{part_one} ----> {part_two} {part_three}")
+
+                                print(
+                                    f"{part_one} ----> {part_two} {part_three}")
                                 wr_result += f"{part_one} ----> {part_two} {part_three}\n"
 
                     result += wr_result
-                
+
                 except Exception as e:
                     lg(type(e).__name__)
                     continue
@@ -605,8 +607,10 @@ class Core:
                             case "1":
                                 self.ter_cls()
                                 ipsubnet_data = {}
-                                ip_subnet = self.get_current_text("Please enter ip and subnet (ex: 192.168.1.0/24): ")
-                                domain = self.get_current_text("Please enter domain: ")
+                                ip_subnet = self.get_current_text(
+                                    "Please enter ip and subnet (ex: 192.168.1.0/24): ")
+                                domain = self.get_current_text(
+                                    "Please enter domain: ")
 
                                 ipsubnet_data.update({
                                     "ip_subnet": ip_subnet,
@@ -614,7 +618,8 @@ class Core:
                                 })
 
                                 self.db.set_ipsubnet_data(ipsubnet_data)
-                                input("Data Added to Database!\nPress enter to back ..")
+                                input(
+                                    "Data Added to Database!\nPress enter to back ..")
                                 self.ter_cls()
                                 continue
 
@@ -623,14 +628,16 @@ class Core:
                                 ip_subnet = self.db.set_dict_ipsubnet_data()
 
                                 for key, value in ip_subnet.items():
-                                    print(f"{key+1:<3} - IP: {value['ip_subnet']:<18} Domain: {value['domain']}")
+                                    print(
+                                        f"{key+1:<3} - IP: {value['ip_subnet']:<18} Domain: {value['domain']}")
 
                                 input("\nPress any key to return ...")
                                 continue
 
                             case "3":
                                 self.ter_cls()
-                                ip_subnet = self.get_current_text("Please enter ip and subnet (ex: 192.168.1.0/24): ")
+                                ip_subnet = self.get_current_text(
+                                    "Please enter ip and subnet (ex: 192.168.1.0/24): ")
                                 self.db.del_ipsubnet_data(ip_subnet)
 
                                 input("\nPress any key to return ...")
@@ -653,10 +660,14 @@ class Core:
                             case "1":
                                 self.ter_cls()
                                 user_data = {}
-                                username = self.get_current_text("Please inser your username: ")
-                                password = self.get_current_text("Please inser your password: ", False)
-                                secret = self.get_current_text("Please inser your secret: ", False)
-                                tag = self.get_current_text("Please inser admin tag: ")
+                                username = self.get_current_text(
+                                    "Please inser your username: ")
+                                password = self.get_current_text(
+                                    "Please inser your password: ", False)
+                                secret = self.get_current_text(
+                                    "Please inser your secret: ", False)
+                                tag = self.get_current_text(
+                                    "Please inser admin tag: ")
                                 user_data.update({
                                     "username": username,
                                     "password": password,
@@ -665,7 +676,8 @@ class Core:
                                 })
                                 self.db.set_admin_data(user_data)
 
-                                input("User Added to Database!\nPress enter to back ..")
+                                input(
+                                    "User Added to Database!\nPress enter to back ..")
                                 self.ter_cls()
                                 continue
 
@@ -673,19 +685,22 @@ class Core:
                                 self.ter_cls()
                                 rows = self.db.get_admin_data()
                                 for i, row in enumerate(rows):
-                                    print(f"id:{i+1} - Username: {en.decode(row[1])}, Tag: {en.decode(row[4])}")
+                                    print(
+                                        f"id:{i+1} - Username: {en.decode(row[1])}, Tag: {en.decode(row[4])}")
                                 input("Press enter to back ..")
                                 self.ter_cls()
                                 continue
 
                             case "3":
                                 self.ter_cls()
-                                c3_username = input("Input username for remove: ")
+                                c3_username = input(
+                                    "Input username for remove: ")
                                 self.db.del_admin_data(en.encode(c3_username))
 
                 case "3":
                     data = self.db.get_app_variables()
-                    new_value = input(f"Enter a switch_ips_worker interval (current:{data[1]}s, e:exit): ")
+                    new_value = input(
+                        f"Enter a switch_ips_worker interval (current:{data[1]}s, e:exit): ")
                     if new_value != "e":
                         self.db.set_app_variables(new_value)
                         Config.interval_changed_flag = True
@@ -708,15 +723,16 @@ class Core:
 
                             connect_failed = 0
                             show_result = connect.send_command(user_imputs)
-                            self.coreWriteFile(f"{self.cf.showDefResult}/{hip}-{user_imputs.replace(" ", "")}.txt", show_result)
-                            
+                            self.coreWriteFile(
+                                f"{self.cf.showDefResult}/{hip}-{user_imputs.replace(" ", "")}.txt", show_result)
+
                         except Exception as e:
                             lg(type(e).__name__)
                             if hip == switch_ips[-1]:
                                 break
                             else:
                                 continue
-                            
+
                 case "d":
                     self.ter_cls()
                     dt = self.get_datetime()
@@ -755,12 +771,17 @@ class Core:
                                         if connect is None:
                                             continue
 
-                                        version_data = connect.send_command("show version")
+                                        version_data = connect.send_command(
+                                            "show version")
                                         model = self.find_model(version_data)
-                                        model_number = re.findall(r"\d{4}", model)
-                                        switch_configs = connect.send_command("show running-config")
-                                        switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
-                                        cct_text_file = "\n".join(switch_configs_lines) + "\n"
+                                        model_number = re.findall(
+                                            r"\d{4}", model)
+                                        switch_configs = connect.send_command(
+                                            "show running-config")
+                                        switch_configs_lines = self.coreConfigFormatChanger(
+                                            switch_configs)
+                                        cct_text_file = "\n".join(
+                                            switch_configs_lines) + "\n"
 
                                         cct_file_name = f"{self.cf.debug_result}{dt['date']}_{dt['time']}_{ip:-<15}_{model_number[0]}.txt"
                                         print(f"{ip:<15}: {cct_file_name}")
@@ -769,7 +790,8 @@ class Core:
 
                             case "psc":
                                 for ip in self.sw_con.keys():
-                                    print(f"{ip:<15}, obj: {self.sw_con[ip]['obj']}, create: {self.sw_con[ip]['created']}, used: {self.sw_con[ip]['used']}")
+                                    print(
+                                        f"{ip:<15}, obj: {self.sw_con[ip]['obj']}, create: {self.sw_con[ip]['created']}, used: {self.sw_con[ip]['used']}")
                                 input("\nPress any key to exit ...")
 
         self.db.set_dict_admin_data()
@@ -788,7 +810,8 @@ class Core:
         for ip in Config.all_switches:
             current += 1
             percent = int((current / total) * 100) if total > 0 else 0
-            print(f"\rPlease wait ({current}/{total}) {percent}%", end="", flush=True)
+            print(
+                f"\rPlease wait ({current}/{total}) {percent}%", end="", flush=True)
 
             try:
                 cnt = self.__cnt(ip)
@@ -797,7 +820,8 @@ class Core:
                 model = self.find_model(version_data)
                 sw_mac = self.find_mac(version_data)
                 days, hours, minutes = self.get_uptime(version_data)
-                ports, ios_version, ios_type = self.get_ios_details(version_data)
+                ports, ios_version, ios_type = self.get_ios_details(
+                    version_data)
                 data = {
                     'ip': ip,
                     'hostname': self.cf.hostname,
@@ -816,15 +840,16 @@ class Core:
                 if model in show_result_file.keys():
                     show_result_file[model].append(uptime_line_file)
                 else:
-                    show_result_file.update({model:[uptime_line_file]})
+                    show_result_file.update({model: [uptime_line_file]})
 
                 if model in show_result_console.keys():
                     show_result_console[model].append(uptime_line_console)
                 else:
-                    show_result_console.update({model:[uptime_line_console]})
+                    show_result_console.update({model: [uptime_line_console]})
 
-                super_putty.append(f'<SessionData SessionId="{self.cf.hostname}" SessionName="{self.cf.hostname}" ImageKey="computer" Host="{ip}" Port="22" Proto="SSH" PuttySession="Default Settings" Username="" ExtraArgs="" SPSLFileName="" RemotePath="" LocalPath="" />')
-            
+                super_putty.append(
+                    f'<SessionData SessionId="{self.cf.hostname}" SessionName="{self.cf.hostname}" ImageKey="computer" Host="{ip}" Port="22" Proto="SSH" PuttySession="Default Settings" Username="" ExtraArgs="" SPSLFileName="" RemotePath="" LocalPath="" />')
+
             except Exception as e:
                 lg(type(e).__name__)
                 continue
@@ -892,9 +917,10 @@ class Core:
                 connect = ConnectHandler(**cisco_switch)
                 connect.enable()
                 with self.sw_con_lock:
-                    self.sw_con.update({ip: {"obj": connect, "created": date_time, "used": date_time}})
+                    self.sw_con.update(
+                        {ip: {"obj": connect, "created": date_time, "used": date_time}})
                 return connect
-            
+
             except NetmikoTimeoutException as nte:
                 # lg(f"{ip}:{type(nte).__name__}") Ignored
                 break
@@ -910,15 +936,14 @@ class Core:
             except ReadTimeout as rt:
                 # lg(f"{ip}:{type(rt).__name__}") Ignored
                 break
-            
+
             except KeyError as ke:
                 lg(f"{ip}:{type(ke).__name__}")
                 with self.sw_con_lock:
                     if ip in self.sw_con:
                         del self.sw_con[ip]
                 break
-                
-                
+
             except Exception as e:
                 lg(f"{ip}:{type(e).__name__}")
                 break
@@ -957,7 +982,8 @@ class Core:
                 if connect is None:
                     connect_failed += 1
                     if connect_failed == 3:
-                        print(f"--- - IP: {hip:<18} You can't connect to switch!")
+                        print(
+                            f"--- - IP: {hip:<18} You can't connect to switch!")
                         break
                     else:
                         continue
@@ -965,7 +991,8 @@ class Core:
                 connect_failed = 0
                 sidta = connect.send_command("show ip device tracking all")
                 if "%" in sidta:
-                    sidta = connect.send_command("show device-tracking database")
+                    sidta = connect.send_command(
+                        "show device-tracking database")
 
                 pattern = re.compile(
                     r"(\d+\.\d+\.\d+\.\d+)"
@@ -976,7 +1003,8 @@ class Core:
                 )
 
                 # date_time = f"{dt['unix']}"
-                actives = ["ACTIVE", "Active", "active", "REACHABLE", "Reachable", "reachable"]
+                actives = ["ACTIVE", "Active", "active",
+                           "REACHABLE", "Reachable", "reachable"]
                 for line in sidta.splitlines():
                     if any(state in line.split() for state in actives):
                         match = pattern.search(line)
@@ -985,7 +1013,8 @@ class Core:
                             if dns_mode:
                                 dns_name = self.get_dns_name(ip)
                                 imsp = f"{dns_name}|{hip}|{port}"
-                                new_imsp = self.db.insert_dnsdata(imsp, date_time)
+                                new_imsp = self.db.insert_dnsdata(
+                                    imsp, date_time)
                                 imsp_sec = "Update"
                                 if new_imsp:
                                     imsp_sec = "Insert (New!)"
@@ -1007,9 +1036,7 @@ class Core:
                                 ip_text_file += f"{line}\n"
                                 print(line)
                                 counter += 1
-            
-            
-            
+
             except Exception as e:
                 lg(type(e).__name__)
                 pass
@@ -1023,7 +1050,7 @@ class Core:
             else:
                 with open(f"{self.cf.ips_dir}IP-List_{dt['date']}-{dt['time']}.txt", "a") as file:
                     file.write(ip_text_file)
-                    
+
         input("Press any key to exit ..")
 
     def normalize_port(self, port_name: str) -> str:
@@ -1045,7 +1072,6 @@ class Core:
             return round((number / 8) / 1024, 1)
         except (TypeError, ValueError):
             return 0.0
-
 
     def parse_interfaces_status(self, output: str) -> dict:
         if not output:
@@ -1115,7 +1141,6 @@ class Core:
 
         return result
 
-
     def parse_interfaces_summary(self, output: str) -> dict:
         if not output:
             return {}
@@ -1142,7 +1167,7 @@ class Core:
 
             if (port_raw.lower() == 'interface'
                 or port_raw.lower().startswith('vlan')
-                or port_raw.lower().startswith('fastethernet0')):
+                    or port_raw.lower().startswith('fastethernet0')):
                 continue
 
             port = self.normalize_port(port_raw)
@@ -1155,7 +1180,7 @@ class Core:
             except ValueError:
                 continue
 
-            result[port] = {'RXBS': rxbs, 'TXBS': txbs,}
+            result[port] = {'RXBS': rxbs, 'TXBS': txbs, }
         return result
 
     def parse_ip_device_tracking(self, output: str) -> dict:
@@ -1217,7 +1242,8 @@ class Core:
         dt = self.get_datetime()
         date_time = str(dt['unix'])
         traffic_datetime = dt.get('psc', dt['dati'])
-        active_states = {"ACTIVE", "Active", "active", "REACHABLE", "Reachable", "reachable"}
+        active_states = {"ACTIVE", "Active", "active",
+                         "REACHABLE", "Reachable", "reachable"}
         tracking_pattern = re.compile(
             r"(\d+\.\d+\.\d+\.\d+)"
             r".*?"
@@ -1245,7 +1271,8 @@ class Core:
 
                 sidta = connect.send_command("show ip device tracking all")
                 if not sidta or "%" in sidta:
-                    sidta = connect.send_command("show device-tracking database")
+                    sidta = connect.send_command(
+                        "show device-tracking database")
 
                 for line in sidta.splitlines():
                     if not any(state in line.split() for state in active_states):
@@ -1261,7 +1288,8 @@ class Core:
                 sisummary = connect.send_command("show interfaces summary")
                 summary_dict = self.parse_interfaces_summary(sisummary)
                 tracking_dict = self.parse_ip_device_tracking(sidta)
-                all_ports = (set(status_dict) | set(summary_dict) | set(tracking_dict))
+                all_ports = (set(status_dict) | set(
+                    summary_dict) | set(tracking_dict))
                 result = {}
                 for port in all_ports:
                     entry = {
@@ -1311,8 +1339,10 @@ class Core:
                             entry['ip'] = ips_list[0]
                             entry['mac'] = macs_list[0]
                         else:
-                            entry['ip'] = json.dumps(ips_list, ensure_ascii=False)
-                            entry['mac'] = json.dumps(macs_list, ensure_ascii=False)
+                            entry['ip'] = json.dumps(
+                                ips_list, ensure_ascii=False)
+                            entry['mac'] = json.dumps(
+                                macs_list, ensure_ascii=False)
 
                         entry['ip_count'] = len(entries)
                         entry['state'] = ",".join(set(states_list))
@@ -1328,7 +1358,7 @@ class Core:
                 if result:
                     try:
                         self.db.insert_sw_traffics(hip, result)
-                        #lg(f"ip: {hip}, ports: {len(result)}" )
+                        # lg(f"ip: {hip}, ports: {len(result)}" )
                     except Exception as db_err:
                         lg(f"{type(db_err).__name__} - {db_err}")
                 else:
@@ -1366,7 +1396,8 @@ class Core:
                         for key, values in result.items():
                             print(key)
                             for index, value in enumerate(values):
-                                branch = "└── " if index == len(values) - 1 else "├── "
+                                branch = "└── " if index == len(
+                                    values) - 1 else "├── "
                                 print(f"{branch}{value}")
                             print()
 
@@ -1445,7 +1476,8 @@ class Core:
                     print("deny ip any any")
                     rule = input("Enter rule: ")
 
-                    config_commands = [f"ip access-list extended {acl_name}", rule]
+                    config_commands = [
+                        f"ip access-list extended {acl_name}", rule]
                     connect.send_config_set(config_commands)
                     self.__save(connect)
 
@@ -1467,11 +1499,13 @@ class Core:
                             print(f"{ia:<2}. {key}")
                             d_acl.update({ia: key})
                             ia += 1
-                        user_case_delete = input("Enter number of access-list for delete (e:exit): ")
+                        user_case_delete = input(
+                            "Enter number of access-list for delete (e:exit): ")
                         if user_case_delete == "e":
                             break
                         user_case_delete = int(user_case_delete)
-                        user_config = self.__set_aclConfig_aclComand(d_acl[user_case_delete])
+                        user_config = self.__set_aclConfig_aclComand(
+                            d_acl[user_case_delete])
                         print(f"log: {user_config} is running ..")
                         connect.send_config_set(user_config)
                         print(f"log: saving switch config!")
@@ -1493,7 +1527,8 @@ class Core:
                             input("\nPress Enter to continue...")
                             break
 
-                        print(f"Current Access-List and Rules (IP: {user_ip}):\n")
+                        print(
+                            f"Current Access-List and Rules (IP: {user_ip}):\n")
                         rules_map = {}
 
                         for acl_index, (acl_name, rules) in enumerate(result.items(), start=1):
@@ -1502,11 +1537,13 @@ class Core:
                             for rule_index, rule in enumerate(rules, start=1):
                                 rule_number = acl_index * 10 + rule_index
                                 rules_map[rule_number] = (acl_name, rule)
-                                branch = "└── " if rule_index == len(rules) else "├── "
+                                branch = "└── " if rule_index == len(
+                                    rules) else "├── "
                                 print(f"   {branch}{rule_number}. {rule}")
                             print()
 
-                        user_choice = input("Enter rule number to delete (e:exit): ").strip()
+                        user_choice = input(
+                            "Enter rule number to delete (e:exit): ").strip()
                         if user_choice.lower() == "e":
                             break
 
@@ -1525,7 +1562,8 @@ class Core:
                         target_acl, target_rule = rules_map[rule_number]
                         target_acl_clean = target_acl.split()[-1]
                         sequence_number = target_rule.strip().split()[0]
-                        delete_commands = [f"ip access-list extended {target_acl_clean}", f"no {sequence_number}",]
+                        delete_commands = [
+                            f"ip access-list extended {target_acl_clean}", f"no {sequence_number}",]
                         connect.send_config_set(delete_commands)
                         self.__save(connect)
 
@@ -1539,7 +1577,8 @@ class Core:
                     break
 
     def __save(self, connect: BaseConnection):
-        output = connect.send_command_timing("copy running-config startup-config")
+        output = connect.send_command_timing(
+            "copy running-config startup-config")
         if "Destination filename" in output:
             output += connect.send_command_timing("\n")
 
@@ -1639,8 +1678,10 @@ class Core:
                         if int(model_number[0]) < 9000:
                             continue
 
-                        switch_configs = connect.send_command("show running-config")
-                        switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
+                        switch_configs = connect.send_command(
+                            "show running-config")
+                        switch_configs_lines = self.coreConfigFormatChanger(
+                            switch_configs)
 
                         nfind = []
                         for i, fline in enumerate(lines[2:], start=2):
@@ -1686,8 +1727,10 @@ class Core:
                         if int(model_number[0]) > 3000:
                             continue
 
-                        switch_configs = connect.send_command("show running-config")
-                        switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
+                        switch_configs = connect.send_command(
+                            "show running-config")
+                        switch_configs_lines = self.coreConfigFormatChanger(
+                            switch_configs)
 
                         nfind = []
                         for i, fline in enumerate(lines[2:], start=2):
@@ -1734,14 +1777,18 @@ class Core:
                             continue
 
                         print(f"- {ip} is opened!")
-                        switch_configs = connect.send_command("show running-config")
-                        switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
-                        interfaces = self.parse_interfaces(switch_configs_lines)
+                        switch_configs = connect.send_command(
+                            "show running-config")
+                        switch_configs_lines = self.coreConfigFormatChanger(
+                            switch_configs)
+                        interfaces = self.parse_interfaces(
+                            switch_configs_lines)
                         for key in interfaces.keys():
                             if "switchport mode access" in interfaces[key]:
                                 for i, fline in enumerate(lines[2:], start=2):
                                     if fline not in interfaces[key]:
-                                        connect.send_config_set([f"interface {key}", fline,])
+                                        connect.send_config_set(
+                                            [f"interface {key}", fline,])
                                         print(f"{ip:15} - {key} is set!")
                                     else:
                                         print(f"{ip:15} - {key} already set!")
@@ -1766,14 +1813,18 @@ class Core:
                             continue
 
                         print(f"- {ip} is opened!")
-                        switch_configs = connect.send_command("show running-config")
-                        switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
-                        interfaces = self.parse_interfaces(switch_configs_lines)
+                        switch_configs = connect.send_command(
+                            "show running-config")
+                        switch_configs_lines = self.coreConfigFormatChanger(
+                            switch_configs)
+                        interfaces = self.parse_interfaces(
+                            switch_configs_lines)
                         for key in interfaces.keys():
                             if "switchport mode access" in interfaces[key]:
                                 for i, fline in enumerate(lines[2:], start=2):
                                     if fline not in interfaces[key]:
-                                        connect.send_config_set([f"interface {key}", fline,])
+                                        connect.send_config_set(
+                                            [f"interface {key}", fline,])
                                         print(f"{ip:15} - {key} is set!")
                                     else:
                                         print(f"{ip:15} - {key} already set!")
@@ -1813,19 +1864,23 @@ class Core:
                         model_number = re.findall(r"\d{4}", model)
 
                         print(f"- {ip} is opened!")
-                        switch_configs = connect.send_command("show running-config")
-                        switch_configs_lines = self.coreConfigFormatChanger(switch_configs)
-                        interfaces = self.parse_interfaces(switch_configs_lines)
+                        switch_configs = connect.send_command(
+                            "show running-config")
+                        switch_configs_lines = self.coreConfigFormatChanger(
+                            switch_configs)
+                        interfaces = self.parse_interfaces(
+                            switch_configs_lines)
                         for key in interfaces.keys():
                             if "switchport mode trunk" in interfaces[key]:
                                 for i, fline in enumerate(lines[2:], start=2):
                                     if fline not in interfaces[key]:
-                                        connect.send_config_set([f"interface {key}", fline,])
+                                        connect.send_config_set(
+                                            [f"interface {key}", fline,])
                                         print(f"{ip:15} - {key} is set!")
                                     else:
                                         print(f"{ip:15} - {key} already set!")
                         connect.save_config()
-                
+
                 case ("set", "switch", "-", "all"):
                     target_ips = self.cf.all_switches
                     if funcs[4] == "all":
@@ -1890,7 +1945,8 @@ class Core:
         ip_row = self.db.databaseGetIpData()
         with open("ip_data_export.csv", "w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
-            writer.writerow(["IP Address", "MAC Address", "Switch IP", "Port", "Insert Data", "Update Data"])
+            writer.writerow(["IP Address", "MAC Address",
+                            "Switch IP", "Port", "Insert Data", "Update Data"])
 
             for row in ip_row:
                 imsp_value = row[1]
@@ -1915,34 +1971,45 @@ class Core:
                     version_data = connect.send_command("show version")
                     hostname = self.find_hostname(version_data)
                     print(f"{counter:<3} - {hostname:<30} create ", end="")
-                    self.coreWriteFile(f"{self.cf.version_dir}{hostname}-version_{dt['date']}-{dt['time']}.txt", version_data)
+                    self.coreWriteFile(
+                        f"{self.cf.version_dir}{hostname}-version_{dt['date']}-{dt['time']}.txt", version_data)
                     print("version, ", end="")
 
-                    running_config_data = connect.send_command("show running-config")
-                    self.coreWriteFile(f"{self.cf.switchconfig_dir}{hostname}-config_{dt['date']}-{dt['time']}.txt", running_config_data)
+                    running_config_data = connect.send_command(
+                        "show running-config")
+                    self.coreWriteFile(
+                        f"{self.cf.switchconfig_dir}{hostname}-config_{dt['date']}-{dt['time']}.txt", running_config_data)
                     print("config, ", end="")
 
-                    interface_status_data = connect.send_command("show interfaces status")
-                    self.coreWriteFile(f"{self.cf.interface_dir}{hostname}-interface_{dt['date']}-{dt['time']}.txt", interface_status_data)
+                    interface_status_data = connect.send_command(
+                        "show interfaces status")
+                    self.coreWriteFile(
+                        f"{self.cf.interface_dir}{hostname}-interface_{dt['date']}-{dt['time']}.txt", interface_status_data)
                     print("interfaces, ", end="")
 
                     vlan_brief_data = connect.send_command("show vlan brief")
-                    self.coreWriteFile(f"{self.cf.vlans_dir}{hostname}-vlan_{dt['date']}-{dt['time']}.txt", vlan_brief_data)
+                    self.coreWriteFile(
+                        f"{self.cf.vlans_dir}{hostname}-vlan_{dt['date']}-{dt['time']}.txt", vlan_brief_data)
                     print("vlans, ", end="")
 
-                    show_cdp_data = connect.send_command("show cdp neighbors detail")
-                    self.coreWriteFile(f"{self.cf.switchcdp_dir}{hostname}-cdp_{dt['date']}-{dt['time']}.txt", show_cdp_data)
+                    show_cdp_data = connect.send_command(
+                        "show cdp neighbors detail")
+                    self.coreWriteFile(
+                        f"{self.cf.switchcdp_dir}{hostname}-cdp_{dt['date']}-{dt['time']}.txt", show_cdp_data)
                     print("cdp, ", end="")
 
                     ip_data = ""
                     try:
-                        ip_data = connect.send_command("show ip device tracking all")
+                        ip_data = connect.send_command(
+                            "show ip device tracking all")
 
                     except Exception as e:
                         lg(type(e).__name__)
-                        ip_data = connect.send_command("show device-tracking database")
+                        ip_data = connect.send_command(
+                            "show device-tracking database")
 
-                    self.coreWriteFile(f"{self.cf.ips_dir}{hostname}-ip_{dt['date']}-{dt['time']}.txt", ip_data)
+                    self.coreWriteFile(
+                        f"{self.cf.ips_dir}{hostname}-ip_{dt['date']}-{dt['time']}.txt", ip_data)
                     print("ip, ", end="")
 
                     backup_msg = running_config_data + "\n\n\n"
@@ -1951,10 +2018,11 @@ class Core:
                     backup_msg += vlan_brief_data + "\n\n\n"
                     backup_msg += show_cdp_data + "\n\n\n"
                     backup_msg += ip_data + "\n\n\n"
-                    self.coreWriteFile(f"{self.cf.backup_dir}{hostname}-backup_{dt['date']}-{dt['time']}.txt", backup_msg)
+                    self.coreWriteFile(
+                        f"{self.cf.backup_dir}{hostname}-backup_{dt['date']}-{dt['time']}.txt", backup_msg)
                     print("backup file successfully!")
                     counter += 1
-            
+
                 except Exception as e:
                     lg(type(e).__name__)
                     pass
@@ -1978,8 +2046,10 @@ class Core:
                     for ld in line_data:
                         list_data = ld[1].split("|")
                         ip_age = int((int(ld[3]) - int(ld[2])) / 86400)
-                        insert_age = int((int(dt['unix']) - int(ld[2])) / 86400)
-                        update_age = int((int(dt['unix']) - int(ld[3])) / 86400)
+                        insert_age = int(
+                            (int(dt['unix']) - int(ld[2])) / 86400)
+                        update_age = int(
+                            (int(dt['unix']) - int(ld[3])) / 86400)
                         result += f"Result ID: {counter}\n"
                         result += f"Database ID: {ld[0]}\n"
                         result += f"IP Address: {list_data[0]}\n"
