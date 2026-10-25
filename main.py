@@ -104,10 +104,12 @@ switch_ips_worker_interval = interval_row[1] if interval_row else "240"
 cr.show_banner()
 
 time.sleep(2)
-
-db.set_dict_admin_data()
-db.set_dict_ipsubnet_data()
-cr.scan_network()
+try:
+    db.set_dict_admin_data()
+    db.set_dict_ipsubnet_data()
+    cr.scan_network()
+except Exception as e:
+    print(e)
 
 
 ip_refresh_worker = PeriodicWorker(
