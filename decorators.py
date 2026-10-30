@@ -17,6 +17,12 @@ def _get_log_path() -> Path:
     return Path(cf.systemlog_dir) / f"MethodLogger_{datetime.now():%Y%m%d}.txt"
 
 
+def _clean_text(text: str) -> str:
+    if not text:
+        return ""
+    return str(text).replace("\r", "").replace("\n", " ")
+
+
 def append_log(contents: str) -> None:
     log_path = _get_log_path()
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -36,7 +42,7 @@ def method_logger(func: Callable[..., Any]) -> Callable[..., Any]:
             return func(self, *args, **kwargs)
 
         except Exception as error:
-            error_message = f"{type(error).__name__}: {error}"
+            error_message = _clean_text(f"{type(error).__name__}: {error}")
             raise
 
         finally:
@@ -78,10 +84,13 @@ def lg(step_name: str, error_message: str = "") -> None:
         file_path = caller_frame.f_code.co_filename
         filename = Path(file_path).name
 
+        clean_step_name = _clean_text(step_name)
+        clean_error_message = _clean_text(error_message)
+
         if class_name:
-            step_id = f"L{line_number}, {class_name}.{function_name}: {step_name}"
+            step_id = f"L{line_number}, {class_name}.{function_name}: {clean_step_name}"
         else:
-            step_id = f"L{line_number}, {function_name}: {step_name}"
+            step_id = f"L{line_number}, {function_name}: {clean_step_name}"
 
         now = datetime.now()
 
@@ -91,7 +100,7 @@ def lg(step_name: str, error_message: str = "") -> None:
             f"----.--- | "
             f"{filename:<20} | "
             f"{step_id} "
-            f"{error_message}"
+            f"{clean_error_message}"
         )
 
         append_log(log_text)
