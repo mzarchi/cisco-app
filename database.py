@@ -1,5 +1,6 @@
 from config import Config
 from encrypt import Encryption
+from decorators import lg
 
 import sqlite3
 
@@ -13,17 +14,17 @@ class Database:
         try:
             self.create_tables()
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-__init__: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
 
     def __open(self):
         try:
             cd = Config()
-            self.conn = sqlite3.connect(cd.db_dir)
+            self.conn = sqlite3.connect(cd.db_dir, check_same_thread=False)
             self.cursor = self.conn.cursor()
             self.db_open = True
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-__open: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
 
     def __close(self):
@@ -32,7 +33,7 @@ class Database:
             self.conn.close()
             self.db_open = False
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-__close: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
 
     def create_tables(self):
@@ -134,7 +135,7 @@ class Database:
             
             self.init_app_variables()
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-create_tables: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
 
     def init_app_variables(self):
@@ -188,7 +189,7 @@ class Database:
             self.__close()
             return row
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-get_app_variables: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return (1, "240")
         
     def set_app_variables(self, value):
@@ -198,6 +199,7 @@ class Database:
             self.cursor.execute("UPDATE app_variables SET interval_switch_ip = ? WHERE id = 1", (value,))
             self.__close()
         except Exception as e:
+            lg(f"{type(e).__name__} - {e}")
             pass
         
     def insert_switch_data(self, data):
@@ -225,7 +227,7 @@ class Database:
                     data['update_date']
                 ))
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-insert_switch_data: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
 
     def manage_switch_data(self, data):
@@ -244,7 +246,7 @@ class Database:
 
             self.__close()
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-manage_switch_link: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
 
         return update
@@ -253,7 +255,7 @@ class Database:
         try:
             self.cursor.execute("INSERT INTO switch_links (link, insert_date, update_date) VALUES (?, ?, ?)", (link, datetime, datetime))
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-insert_switch_link: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
 
     def manage_switch_link(self, link, datetime):
@@ -272,7 +274,7 @@ class Database:
 
             self.__close()
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-manage_switch_link: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
 
         return update
@@ -295,7 +297,7 @@ class Database:
                     ))
             self.__close()
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-set_ipsubnet_data: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
 
     def set_admin_data(self, data):
@@ -317,7 +319,7 @@ class Database:
                 ))
             self.__close()
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-set_admin_data: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
 
     def get_admin_data(self):
@@ -329,7 +331,7 @@ class Database:
             self.__close()
             return rows
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-get_admin_data: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
 
     def del_admin_data(self, username):
@@ -339,7 +341,7 @@ class Database:
             self.cursor.execute("DELETE FROM admin_data WHERE username = ?", (username,))
             self.__close()
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-del_admin_data: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
 
     def set_dict_admin_data(self):
@@ -360,7 +362,7 @@ class Database:
                 }})
 
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-set_dict_admin_data: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
 
     def set_dict_ipsubnet_data(self):
@@ -384,7 +386,7 @@ class Database:
                 self.__close()
                 return ip_subnet
             except Exception as e:
-                # print(f"- F-core, C-App_DB, D-set_dict_ipsubnet_data: {e}")
+                lg(f"{type(e).__name__} - {e}")
                 return False
 
     def del_ipsubnet_data(self, ipsubnet):
@@ -394,7 +396,7 @@ class Database:
             self.cursor.execute("DELETE FROM ip_domain WHERE ip_subnet = ?", (ipsubnet,))
             self.__close()
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-del_ipsubnet_data: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
 
     def insert_ipdata(self, data:dict, sw_statuse:dict, date_time, edit_field):
@@ -417,7 +419,7 @@ class Database:
 
             self.__close()
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-insert_ipdata_worker: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
             
     def insert_dnsdata(self, imsp, date_time):
@@ -437,7 +439,7 @@ class Database:
             self.__close()
             return new_imsp
         except Exception as e:
-            # print(f"- F-core, C-App_DB, D-insert_ipdata: {e}")
+            lg(f"{type(e).__name__} - {e}")
             return False
 
     def databaseGetIpData(self):
@@ -476,6 +478,7 @@ class Database:
                 return f"Success! {row_count} rows affected."
 
         except sqlite3.Error as e:
+            lg(f"{type(e).__name__} - {e}")
             return f"Database Error: {e}"
         
     def get_switch_statuses(self, duration, sw_ip, pname):
