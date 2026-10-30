@@ -14,4 +14,6 @@ local*
 *.json
 temp.txt
 mplcursors/
+plotly/
+seaborn/
 commands.txt
