@@ -42,14 +42,18 @@ def method_logger(func: Callable[..., Any]) -> Callable[..., Any]:
         finally:
             finished_at = datetime.now()
             elapsed = perf_counter() - started_at
-            method_name = f"{func.__qualname__}()"[:80]
+            method_name = f"{func.__qualname__}()"
+            
+            file_path = func.__code__.co_filename
+            filename = Path(file_path).name
 
             log_text = (
                 f"{finished_at:%Y-%m-%d} | "
                 f"{finished_at:%H:%M:%S} | "
-                f"{method_name:<80} | "
                 f"{elapsed:08.3f} | "
-                f"E: {error_message}"
+                f"{filename:<20} | "
+                f"{method_name} "
+                f"{error_message}"
             )
 
             append_log(log_text)
@@ -70,21 +74,24 @@ def lg(step_name: str, error_message: str = "") -> None:
 
         function_name = caller_frame.f_code.co_name
         line_number = caller_frame.f_lineno
+        
+        file_path = caller_frame.f_code.co_filename
+        filename = Path(file_path).name
 
         if class_name:
             step_id = f"L{line_number}, {class_name}.{function_name}: {step_name}"
         else:
             step_id = f"L{line_number}, {function_name}: {step_name}"
 
-        step_id = step_id[:80]
         now = datetime.now()
 
         log_text = (
             f"{now:%Y-%m-%d} | "
             f"{now:%H:%M:%S} | "
-            f"{step_id:<80} | "
-            f"0000.000 | "
-            f"E: {error_message}"
+            f"----.--- | "
+            f"{filename:<20} | "
+            f"{step_id} "
+            f"{error_message}"
         )
 
         append_log(log_text)
