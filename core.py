@@ -27,12 +27,14 @@ import threading
 
 class Core:
     cf = Config()
+    #db = Database()
     db = Database()
     sw_con = {}
     sw_con_lock = threading.Lock()
 
     def __init__(self):
-        pass
+        if self.db is None:
+            self.db = Database()
 
     def ping(self, ip):
         param = "-n" if platform.system().lower() == "windows" else "-c"
@@ -674,7 +676,14 @@ class Core:
                                     "secret": secret,
                                     "tag": tag
                                 })
+                                lg("Admins Saves to database.")
                                 self.db.set_admin_data(user_data)
+                                lg("Admins Saves to app dict.")
+                                self.db.set_dict_admin_data()
+                                lg("IP/Sub is set.")
+                                self.db.set_dict_ipsubnet_data()
+                                lg("Networkscan Started!")
+                                self.scan_network()
 
                                 input(
                                     "User Added to Database!\nPress enter to back ..")
