@@ -243,6 +243,7 @@ class Database:
                 update = True
             else:
                 self.insert_switch_data(data)
+                lg(f"Insert {data}")
 
             self.__close()
         except Exception as e:
@@ -268,6 +269,7 @@ class Database:
             row = self.cursor.fetchone()
             if row:
                 self.cursor.execute("UPDATE switch_links SET update_date = ? WHERE link = ?", (datetime, link))
+                lg(f"Insert {link}")
                 update = True
             else:
                 self.insert_switch_link(link, datetime)
@@ -409,6 +411,7 @@ class Database:
 
                 if not row:
                     self.cursor.execute("INSERT INTO ip_data (imsp, insert_date, update_date, edit_field) VALUES (?, ?, ?, ?)", (imsp, date_time, date_time, edit_field,))
+                    lg(f"Insert {imsp}")
                 else:
                     self.cursor.execute("UPDATE ip_data SET update_date = ?, edit_field = ? WHERE imsp = ?", (date_time, edit_field, imsp,))
                                     
@@ -433,6 +436,7 @@ class Database:
             if not row:
                 new_imsp = True
                 self.cursor.execute("""INSERT INTO dns_data (imsp, insert_date, update_date) VALUES (?, ?, ?)""", (imsp, date_time, date_time,))
+                lg(f"Insert {imsp}")
             else:
                 self.cursor.execute("UPDATE dns_data SET update_date = ? WHERE imsp = ?", (date_time, imsp))
 
