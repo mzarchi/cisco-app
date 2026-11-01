@@ -14,7 +14,7 @@ logging.getLogger("paramiko").setLevel(logging.CRITICAL)
 logging.getLogger("netmiko").setLevel(logging.CRITICAL)
 
 
-ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp vG214-2610")
+ctypes.windll.kernel32.SetConsoleTitleW("CiscoApp vG222-2611")
 
 
 startup_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

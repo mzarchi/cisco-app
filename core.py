@@ -27,7 +27,7 @@ import threading
 
 class Core:
     cf = Config()
-    #db = Database()
+    # db = Database()
     db = Database()
     sw_con = {}
     sw_con_lock = threading.Lock()
@@ -160,7 +160,7 @@ class Core:
         print(Config.banner)
         message = f"Developer: github/mzarchi, Open-Source project\n"
         # G{CommitsCounts}-{YYMM}
-        message += "First-Commit: G0-2508, version: G214-2610\n"
+        message += "First-Commit: G0-2508, version: G222-2611\n"
         message += "Repository: https://github.com/mzarchi/cisco-app\n"
         message += "Me at Twitter, Telegram and Instagram: @mhzarchi\n"
         message += "I always live in the depths of the Internet ❤️"
